@@ -50,9 +50,10 @@ int disk_last_printed[NUM_DISKS];
 #define DISK_PARAGRAPH 9
 
 int action_number=1;
-int chapter_start=2;
-int paragraph_start=2;
+int chapter_start=1;
+int paragraph_start=1;
 int chapter_number = 1;
+int first_hannah = 1;
 
 int first_seen = -1;
 int been_a_while = -1;
@@ -61,6 +62,28 @@ void print_with_substitution(char *text)
 {
    char *body = strdup(text);
    char *s;
+
+   for(;;) {
+      s = strstr(body, "$(");
+      if (!s)
+         break;
+      else {
+         char buffer[512];
+         int n, count;
+         char *t = strchr(s, ')');
+         char **str, *choice;
+         assert(t);
+         *t = 0;
+         str = stb_tokens(s+2, ",", &count);
+         *t = ')';
+         n = t-s;
+         strncpy(buffer, s, n+1);
+         buffer[n+1] = 0;
+         choice = str[(rand()>>3) % count];
+         replace(&body, buffer, choice);
+         free(str);
+      }
+   }
 
    sub("$peg_0", "left peg");
    sub("$peg_1", "middle peg");
@@ -73,6 +96,8 @@ void print_with_substitution(char *text)
       int n;
       sscanf(s, "$disk_%d", &n);
       sprintf(disk, "$disk_%d", n);
+
+#if 0
       if (disk_last_printed[n] == 0) {
          // the first time we mention the disk, we give its full name -- this is when listing at the beginning
          if (n == 0)
@@ -81,15 +106,18 @@ void print_with_substitution(char *text)
             sprintf(buffer, "$nth_%d and smallest disk, the $color_%d one,", n, n);
          else
             sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
-      } else if (disk_last_printed[n] < chapter_start && n < NUM_DISKS-2) {
+      } else
+#endif
+      
+      if (disk_last_printed[n] < chapter_start && n < NUM_DISKS-2) {
          // first time it's mentioned in this chapter, and it's not constantly mentioned
-         sprintf(buffer, "$nth_%d ($color_%d) disk", n, n);
+         sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
       } else if (disk_last_printed[n] < paragraph_start && n < NUM_DISKS-1) {
          // first time it's mentioned in this paragraph
          if (n <= DISK_PARAGRAPH)
             sprintf(buffer, "$nth_%d disk", n);
          else
-            sprintf(buffer, "$nth_%d ($color_%d) disk", n, n);
+            sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
       } else if (disk_last_printed[n] < chapter_start) {
          // first time it's mention in this chapter, 
          sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
@@ -112,8 +140,21 @@ void print_with_substitution(char *text)
       disk_last_printed[n] = action_number;
    }
 
-   // TODO: use different rule for chapter, paragraph
-   sub4("$Next", "Next", "Then", "At this point", "Now");
+   if (sub("$Hannah", first_hannah ? "Hannah" : "She"))
+      first_hannah = 0;
+   if (sub("$hannah", first_hannah ? "Hannah" : "she"))
+      first_hannah = 0;
+
+   sub3("$Next", "Next", "Then", "After that");
+   sub4("$Now",  "Now", "", "", "At this point");
+   sub2("$next", "next", "then");
+   sub3("$ReturnNow", "First ", "To begin with ", "To start off, ");
+
+   sub3("$before",       "before", "previously", "ever until then");
+   sub("$noteworthy_0",  "monumental");
+   sub3("$noteworthy_1", "major", "huge", "memorable");
+   sub3("$noteworthy_2", "significant", "noteworthy", "relatively important");
+   sub3("$event",        "event", "occasion", "occurrence");
 
    sub("$nth_10", "eleventh");
    sub("$nth_11", "twelfth");
@@ -153,12 +194,6 @@ void print_with_substitution(char *text)
    sub("$color_8", "purple");
    sub("$color_9", "magenta");
 
-   sub3("$before",       "before", "previously", "ever until then");
-   sub("$noteworthy_0",  "monumental");
-   sub3("$noteworthy_1", "major", "huge", "memorable");
-   sub3("$noteworthy_2", "significant", "noteworthy", "relatively important");
-   sub3("$event",        "event", "occasion", "occurrence");
-
    printf("%s", body);
    free(body);
 }
@@ -177,6 +212,10 @@ int first=1;
 int trigger_chapter;
 int pending=0;
 
+int starting_para = 1;
+int starting_chapter = 1;
+int prefix_para = 0;
+
 // we just printed about this disk
 void write_about_disk(int at_new_paragraph)
 {
@@ -186,25 +225,42 @@ void write_about_disk(int at_new_paragraph)
    assert(n >= 0);
 
    if (at_new_paragraph) {
-      printsub("\n\n<p>\n\nThe $color_%d disk. ", n);
+      printsub("\nThe $color_%d disk. ", n);
    } else {
       
    }
-   if (first)
-      printsub("Hannah hadn't moved that $before. ");
+   if (first) {
+      if (n == 0)
+         printsub("That was the only time $hannah would need to move it. ");
+      else
+         printsub("$Hannah hadn't moved that $before. ");
+   }
    if (n < 3) {
-      printsub("A $noteworthy_%d $event. ");
+      printsub("A $noteworthy_%d $event. ", n);
    }
 
-   printsub("\n<p>\n"
-            "Hannah turned her attention back to solving the puzzle. ");
+   printsub("\n<p>\n");
+   first_hannah = 1;
+   printsub("$Hannah turned her attention back to solving the puzzle.\n");
+   starting_para = 0; // avoid paragraph-starters, which sound awkward
+   prefix_para = 1;
 
    first_seen = -1;
    been_a_while = -1;      
 }
 
+int check_done(int *pegs)
+{
+   int i;
+   for (i=0; i < NUM_DISKS; ++i)
+      if (pegs[i] != 2)
+         return 0;
+   return 1;
+}
+
 void move(int *pegs, int a, int b)
 {
+   int r;
    int last_a = -1, last_b = -1;
    int i, disk, from, to;
    // find topmost disk on each peg
@@ -225,12 +281,40 @@ void move(int *pegs, int a, int b)
    }
    pegs[disk] = to;
    if (first)
-      printsub("First, ");
-   else
-      printsub("$Next ");
-   first=0;
+      printsub("First, $hannah ");
+   else if (disk == 0)
+      printsub("Next, at long last, $hannah ");
+   else if (check_done(pegs))
+      printsub("Finally $hannah ");
+   else if (starting_chapter)
+      printsub("At this point, $hannah ");
+   else if (starting_para)
+      printsub("$Now $hannah ");
+   else if (prefix_para)
+      printsub("$ReturnNow $hannah ");
+   else {
+      if (rand() % 100 > 20)
+         printsub("$Next $hannah ");
+      else
+         printsub("$Hannah $next ");
+   }
 
-   printsub("Hannah moved the $disk_%d from the $peg_%d to the $peg_%d.\n", disk, from, to);
+   r = (rand()>>4) % 100;
+   if (r < 40 || starting_para)
+      printsub("moved the $disk_%d from the $peg_%d to the $peg_%d", disk, from, to);
+   else if (r < 70)
+      printsub("$(took,removed) the $disk_%d off the $peg_%d and $(put,placed,slid) it on the $peg_%d", disk, from, to);
+   else
+      printsub("$(pulled,took,slid) the $disk_%d from off the $peg_%d and $(put,placed) it on the $peg_%d", disk, from, to);
+
+   if (disk == 0)
+      printsub("!\n");
+   else
+      printsub(".\n");
+
+   first=0;
+   starting_chapter=0;
+   starting_para=0;
 
    // probably this never happens, but to be on the safe side, never print both events
    if (been_a_while && first_seen)
@@ -252,29 +336,25 @@ void move(int *pegs, int a, int b)
    ++action_number;
    if (disk == DISK_PARAGRAPH) {
       printsub("\n<p>\n");
+      first_hannah = 1;
       paragraph_start = action_number;
+      starting_para = 1;
       if (pending) {
          write_about_disk(1);
          pending = 0;
+         prefix_para = 0;
       }
       if (trigger_chapter) {
          printsub("\n\n<h2>Chapter %d</h2>\n\n", ++chapter_number);
          chapter_start = action_number;
          trigger_chapter = 0;
+         starting_chapter = 1;
+         starting_para = 1;
       }
    }
    if (disk == DISK_CHAPTER) {
       trigger_chapter=1;
    }
-}
-
-int check_done(int *pegs)
-{
-   int i;
-   for (i=0; i < NUM_DISKS; ++i)
-      if (pegs[i] != 2)
-         return 0;
-   return 1;
 }
 
 void hanoi(void)
