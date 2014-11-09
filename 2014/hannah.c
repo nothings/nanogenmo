@@ -63,6 +63,7 @@ void print_with_substitution(char *text)
    char *body = strdup(text);
    char *s;
 
+   // randomly choose between "$(foo,bar,baz)" constructs (no nesting allowed)
    for(;;) {
       s = strstr(body, "$(");
       if (!s)
@@ -85,9 +86,11 @@ void print_with_substitution(char *text)
       }
    }
 
-   sub("$peg_0", "left peg");
-   sub("$peg_1", "middle peg");
-   sub("$peg_2", "right peg");
+   // hannah pronouns in a dumb way: turn to "she" after first use in each paragraph
+   if (sub("$Hannah", first_hannah ? "Hannah" : "She"))
+      first_hannah = 0;
+   if (sub("$hannah", first_hannah ? "Hannah" : "she"))
+      first_hannah = 0;
 
    // we have special rules for printing $disk_n, but there can only be one disk_n per string
    s = strstr(body, "$disk_");
@@ -97,34 +100,23 @@ void print_with_substitution(char *text)
       sscanf(s, "$disk_%d", &n);
       sprintf(disk, "$disk_%d", n);
 
-#if 0
-      if (disk_last_printed[n] == 0) {
-         // the first time we mention the disk, we give its full name -- this is when listing at the beginning
-         if (n == 0)
-            sprintf(buffer, "$nth_%d and largest disk, the $color_%d one,", n, n);
-         else if (n == NUM_DISKS-1)
-            sprintf(buffer, "$nth_%d and smallest disk, the $color_%d one,", n, n);
-         else
-            sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
-      } else
-#endif
-      
-      if (disk_last_printed[n] < chapter_start && n < NUM_DISKS-2) {
+      if (disk_last_printed[n] < chapter_start && n < NUM_DISKS-2)
          // first time it's mentioned in this chapter, and it's not constantly mentioned
          sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
-      } else if (disk_last_printed[n] < paragraph_start && n < NUM_DISKS-1) {
+      else if (disk_last_printed[n] < paragraph_start && n < NUM_DISKS-1) {
          // first time it's mentioned in this paragraph
          if (n <= DISK_PARAGRAPH)
             sprintf(buffer, "$nth_%d disk", n);
          else
             sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
-      } else if (disk_last_printed[n] < chapter_start) {
+      } else if (disk_last_printed[n] < chapter_start)
          // first time it's mention in this chapter, 
          sprintf(buffer, "$nth_%d, $color_%d, disk", n, n);
-      } else if (n < NUM_DISKS-1) {
+      else if (n < NUM_DISKS-1)
          sprintf(buffer, "$nth_%d disk", n);
-      } else
+      else
          sprintf(buffer, "$color_%d disk", n);
+
       sub(disk, buffer);
 
 
@@ -140,21 +132,13 @@ void print_with_substitution(char *text)
       disk_last_printed[n] = action_number;
    }
 
-   if (sub("$Hannah", first_hannah ? "Hannah" : "She"))
-      first_hannah = 0;
-   if (sub("$hannah", first_hannah ? "Hannah" : "she"))
-      first_hannah = 0;
+   sub("$peg_0", "left peg");
+   sub("$peg_1", "middle peg");
+   sub("$peg_2", "right peg");
 
-   sub3("$Next", "Next", "Then", "After that");
-   sub4("$Now",  "Now", "", "", "At this point");
-   sub2("$next", "next", "then");
-   sub3("$ReturnNow", "First ", "To begin with ", "To start off, ");
-
-   sub3("$before",       "before", "previously", "ever until then");
    sub("$noteworthy_0",  "monumental");
    sub3("$noteworthy_1", "major", "huge", "memorable");
    sub3("$noteworthy_2", "significant", "noteworthy", "relatively important");
-   sub3("$event",        "event", "occasion", "occurrence");
 
    sub("$nth_10", "eleventh");
    sub("$nth_11", "twelfth");
@@ -233,10 +217,10 @@ void write_about_disk(int at_new_paragraph)
       if (n == 0)
          printsub("That was the only time $hannah would need to move it. ");
       else
-         printsub("$Hannah hadn't moved that $before. ");
+         printsub("$Hannah hadn't moved it $(before, previously, ever until then). ");
    }
    if (n < 3) {
-      printsub("A $noteworthy_%d $event. ", n);
+      printsub("A $noteworthy_%d $(event,occasion,occurrence). ", n);
    }
 
    printsub("\n<p>\n");
@@ -289,14 +273,14 @@ void move(int *pegs, int a, int b)
    else if (starting_chapter)
       printsub("At this point, $hannah ");
    else if (starting_para)
-      printsub("$Now $hannah ");
+      printsub("$(Now,,At this point) $hannah ");
    else if (prefix_para)
-      printsub("$ReturnNow $hannah ");
+      printsub("$(First,To begin with, To start off) $hannah ");
    else {
       if (rand() % 100 > 20)
-         printsub("$Next $hannah ");
+         printsub("$(Next,Then,After that) $hannah ");
       else
-         printsub("$Hannah $next ");
+         printsub("$Hannah $(next,then) ");
    }
 
    r = (rand()>>4) % 100;
@@ -373,9 +357,10 @@ int main(int argc, char **argv)
 {
    int i;
    srand(0);
-   printsub("<h1>How Hannah Solved The $Number_%d-Disk Tower of Hanoi</h1>\n\n", NUM_DISKS);
+   printsub("<h1>Hannah and The $Number_%d-Disk Tower of Hanoi</h1>\n\n", NUM_DISKS);
    printsub("\n\n<h2>Prologue</h2>\n\n");
-   printsub("Hannah was faced with a puzzle known as the Tower of Hanoi.<p> The puzzle consisted of three tall pegs side-by-side,\n"
+   printsub("Hannah was faced with a puzzle known as the Tower of Hanoi.<p>\n"
+            "The puzzle consisted of three tall pegs side-by-side,\n"
             "and a stack of $number_%d disks threaded through the left peg.\n<p>\n", NUM_DISKS);
    printsub("The $number_%d disks were successively smaller from bottom to top, and each was colored differently.\n", NUM_DISKS);
    printsub("The first, bottom-most, and largest disk was colored $color_0;\n");
