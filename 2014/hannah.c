@@ -10,11 +10,15 @@
 #define NUM_DISKS   12
 
 
-char *replace(char *src, char *a, char *b)
+int replace(char **src, char *a, char *b)
 {
-   char *result = stb_dupreplace(src, a, b);
-   free(src);
-   return result;
+   char *result;
+   if (!strstr(*src, a))
+      return 0;
+   result = stb_dupreplace(*src, a, b);
+   free(*src);
+   *src = result;
+   return 1;
 }
 
 char *choose3(char *a, char *b, char *c)
@@ -34,10 +38,10 @@ char *choose4(char *a, char *b, char *c, char *d)
    return d;
 }
 
-#define sub(v,a)        body = replace(body, v, a)
-#define sub2(v,a,b)     body = replace(body, v, rand()&64 ? a : b)
-#define sub3(v,a,b,c)   body = replace(body, v, choose3(a,b,c))
-#define sub4(v,a,b,c,d) body = replace(body, v, choose4(a,b,c,d))
+#define sub(v,a)        replace(&body, v, a)
+#define sub2(v,a,b)     replace(&body, v, rand()&64 ? a : b)
+#define sub3(v,a,b,c)   replace(&body, v, choose3(a,b,c))
+#define sub4(v,a,b,c,d) replace(&body, v, choose4(a,b,c,d))
 
 int disk_print_count[NUM_DISKS];
 int disk_last_printed[NUM_DISKS];
@@ -46,9 +50,12 @@ int disk_last_printed[NUM_DISKS];
 #define DISK_PARAGRAPH 9
 
 int action_number=1;
-int chapter_start=1;
-int paragraph_start=1;
+int chapter_start=2;
+int paragraph_start=2;
 int chapter_number = 1;
+
+int first_seen = -1;
+int been_a_while = -1;
 
 void print_with_substitution(char *text)
 {
@@ -62,12 +69,12 @@ void print_with_substitution(char *text)
    // we have special rules for printing $disk_n, but there can only be one disk_n per string
    s = strstr(body, "$disk_");
    if (s) {
-      char disk[16], buffer[64];
+      char disk[16], buffer[256];
       int n;
       sscanf(s, "$disk_%d", &n);
       sprintf(disk, "$disk_%d", n);
       if (disk_last_printed[n] == 0) {
-         // the first time we mention the disk, we give its full name
+         // the first time we mention the disk, we give its full name -- this is when listing at the beginning
          if (n == 0)
             sprintf(buffer, "$nth_%d and largest disk, the $color_%d one,", n, n);
          else if (n == NUM_DISKS-1)
@@ -91,6 +98,16 @@ void print_with_substitution(char *text)
       } else
          sprintf(buffer, "$color_%d disk", n);
       sub(disk, buffer);
+
+
+      // flag if we haven't seen this disk in a while
+      if (disk_last_printed[n] < action_number-1000)
+         if (disk_last_printed[n] == 0)
+            first_seen = n;
+         else {
+            if (rand() % 100 < 150 - n * 20)
+               been_a_while = n;
+         }
       ++disk_print_count[n];
       disk_last_printed[n] = action_number;
    }
@@ -136,12 +153,55 @@ void print_with_substitution(char *text)
    sub("$color_8", "purple");
    sub("$color_9", "magenta");
 
+   sub3("$before",       "before", "previously", "ever until then");
+   sub("$noteworthy_0",  "monumental");
+   sub3("$noteworthy_1", "major", "huge", "memorable");
+   sub3("$noteworthy_2", "significant", "noteworthy", "relatively important");
+   sub3("$event",        "event", "occasion", "occurrence");
+
    printf("%s", body);
    free(body);
 }
 
+void printsub(char *fmt, ...)
+{
+   char buffer[512];
+   va_list v;
+   va_start(v, fmt);
+   vsprintf(buffer, fmt, v);
+   va_end(v);
+   print_with_substitution(buffer);
+}
+
 int first=1;
 int trigger_chapter;
+int pending=0;
+
+// we just printed about this disk
+void write_about_disk(int at_new_paragraph)
+{
+   int n;
+   int first = (first_seen >= 0);
+   n = first ? first_seen : been_a_while;
+   assert(n >= 0);
+
+   if (at_new_paragraph) {
+      printsub("\n\n<p>\n\nThe $color_%d disk. ", n);
+   } else {
+      
+   }
+   if (first)
+      printsub("Hannah hadn't moved that $before. ");
+   if (n < 3) {
+      printsub("A $noteworthy_%d $event. ");
+   }
+
+   printsub("\n<p>\n"
+            "Hannah turned her attention back to solving the puzzle. ");
+
+   first_seen = -1;
+   been_a_while = -1;      
+}
 
 void move(int *pegs, int a, int b)
 {
@@ -165,22 +225,40 @@ void move(int *pegs, int a, int b)
    }
    pegs[disk] = to;
    if (first)
-      printf("First, ");
+      printsub("First, ");
    else
-      print_with_substitution("$Next ");
+      printsub("$Next ");
    first=0;
 
-   {
-      char buffer[256];
-      sprintf(buffer, "Hannah moved the $disk_%d from the $peg_%d to the $peg_%d.\n", disk, from, to);
-      print_with_substitution(buffer);
-   }
+   printsub("Hannah moved the $disk_%d from the $peg_%d to the $peg_%d.\n", disk, from, to);
+
+   // probably this never happens, but to be on the safe side, never print both events
+   if (been_a_while && first_seen)
+      been_a_while = -1;
+
+   // decide whether to comment on this disk now or in the next paragraph
+   // @TODO: real decision depends on what kind of comment you're going to make
+   if (been_a_while >= 0 || first_seen >= 0) {
+      if (!pending) {
+         if (!first_seen) {
+            if ((rand() & 256) < 80)
+               pending = 1;
+         }
+         if (!pending)
+            write_about_disk(0);
+      }
+   }      
+
    ++action_number;
    if (disk == DISK_PARAGRAPH) {
-      printf("\n<p>\n");
+      printsub("\n<p>\n");
       paragraph_start = action_number;
+      if (pending) {
+         write_about_disk(1);
+         pending = 0;
+      }
       if (trigger_chapter) {
-         printf("\n\n<h2>Chapter %d</h2>\n\n", ++chapter_number);
+         printsub("\n\n<h2>Chapter %d</h2>\n\n", ++chapter_number);
          chapter_start = action_number;
          trigger_chapter = 0;
       }
@@ -213,33 +291,26 @@ void hanoi(void)
 
 int main(int argc, char **argv)
 {
-   char buffer[512];
    int i;
    srand(0);
-   sprintf(buffer, "<h1>How Hannah Solved The $Number_%d-Disk Tower of Hanoi</h1>\n\n", NUM_DISKS);
-   print_with_substitution(buffer);
-   printf("\n\n<h2>Prologue</h2>\n\n");
-   sprintf(buffer, "Hannah was faced with a puzzle known as the Tower of Hanoi. The puzzle consisted of three tall pegs side-by-side,\n"
-                   "and a stack of $number_%d disks threaded through the left peg.\n", NUM_DISKS);
-   print_with_substitution(buffer);
-   sprintf(buffer, "The $number_%d disks were successively smaller from bottom to top, and each was colored differently.\n", NUM_DISKS);
-   print_with_substitution(buffer);
-   print_with_substitution("The first, bottom-most, and largest disk was colored $color_0;\n");
+   printsub("<h1>How Hannah Solved The $Number_%d-Disk Tower of Hanoi</h1>\n\n", NUM_DISKS);
+   printsub("\n\n<h2>Prologue</h2>\n\n");
+   printsub("Hannah was faced with a puzzle known as the Tower of Hanoi.<p> The puzzle consisted of three tall pegs side-by-side,\n"
+            "and a stack of $number_%d disks threaded through the left peg.\n<p>\n", NUM_DISKS);
+   printsub("The $number_%d disks were successively smaller from bottom to top, and each was colored differently.\n", NUM_DISKS);
+   printsub("The first, bottom-most, and largest disk was colored $color_0;\n");
    for (i=1; i < NUM_DISKS-1; ++i) {
       if (i > 1 && i < NUM_DISKS-2 && (rand() & 127) < 50)
-         sprintf(buffer, "the next, $nth_%d, disk was colored $color_%d;\n", i, i);
+         printsub("the next, $nth_%d, disk was colored $color_%d;\n", i, i);
       else
-         sprintf(buffer, "the next disk was colored $color_%d;\n", i);
-      print_with_substitution(buffer);
+         printsub("the next disk was colored $color_%d;\n", i);
    }
-   sprintf(buffer, "and the $nth_%d, smallest, and top-most disk was colored $color_%d.\n", i, i);
-   print_with_substitution(buffer);
-   sprintf(buffer, "What Hannah needed to do to solve the puzzle was to move one disk at a time from the top\n"
-                   "of a stack on one peg to another peg, never placing a disk on top of a smaller disk,\n"
-                   "so that all $number_%d disks ended up on the right peg.\n", NUM_DISKS);
-   print_with_substitution(buffer);
-   printf("\n\n<p>\n\n");
-   printf("\n\n<h2>Chapter 1</h2>\n\n");
+   printsub("and the $nth_%d, smallest, and top-most disk was colored $color_%d.\n<p>\n", i, i);
+   printsub("What Hannah needed to do to solve the puzzle was to move one disk at a time from the top\n"
+            "of a stack on one peg to another peg, never placing a disk on top of a smaller disk,\n"
+            "so that all $number_%d disks ended up on the right peg.\n", NUM_DISKS);
+   printsub("\n\n<p>\n\n");
+   printsub("\n\n<h2>Chapter 1</h2>\n\n");
    hanoi();
    return 0;
 }
