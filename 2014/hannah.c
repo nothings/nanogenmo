@@ -217,24 +217,27 @@ int main(int argc, char **argv)
    srand(0);
    sprintf(buffer, "<h1>How Hannah Solved The $Number_%d-Disk Tower of Hanoi</h1>\n\n", NUM_DISKS);
    print_with_substitution(buffer);
-   printf("\n\n<h2>Chapter 1</h2>\n\n");
-   sprintf(buffer, "Hannah was faced with a puzzle which consisted of three rods side-by-side, and a stack of $number_%d disks threaded through the left rod. ", NUM_DISKS);
+   printf("\n\n<h2>Prologue</h2>\n\n");
+   sprintf(buffer, "Hannah was faced with a puzzle known as the Tower of Hanoi. The puzzle consisted of three rods side-by-side,\n and a stack of $number_%d disks threaded through the left rod.\n", NUM_DISKS);
    print_with_substitution(buffer);
-   sprintf(buffer, "The $number_%d disks were successively smaller from bottom to top, and each was colored differently. ", NUM_DISKS);
+   sprintf(buffer, "The $number_%d disks were successively smaller from bottom to top, and each was colored differently.\n", NUM_DISKS);
    print_with_substitution(buffer);
-   print_with_substitution("The first, bottom-most, and largest disk was colored $color_0; ");
+   print_with_substitution("The first, bottom-most, and largest disk was colored $color_0;\n");
    for (i=1; i < NUM_DISKS-1; ++i) {
       if (i > 1 && i < NUM_DISKS-2 && (rand() & 127) < 60)
-         sprintf(buffer, "the next, $nth_%d, disk was colored $color_%d; ", i, i);
+         sprintf(buffer, "the next, $nth_%d, disk was colored $color_%d;\n", i, i);
       else
-         sprintf(buffer, "the next disk was colored $color_%d; ", i);
+         sprintf(buffer, "the next disk was colored $color_%d;\n", i);
       print_with_substitution(buffer);
    }
-   sprintf(buffer, "and the $nth_%d, smallest, and top-most disk was colored $color_%d. ", NUM_DISKS-1, NUM_DISKS-1);
+   sprintf(buffer, "and the $nth_%d, smallest, and top-most disk was colored $color_%d.\n", NUM_DISKS-1, NUM_DISKS-1);
    print_with_substitution(buffer);
-   sprintf(buffer, "What Hannah needed to do to solve the puzzle was to move one disk at a time, never placing a disk on top of a smaller disk, so that all %d disks ended up on the right rod.", NUM_DISKS);
+   sprintf(buffer, "What Hannah needed to do to solve the puzzle was to move one disk at a time from the top\n"
+                   "of a stack on one peg to another peg, never placing a disk on top of a smaller disk,\n"
+                   "so that all $number_%d disks ended up on the right rod.\n", NUM_DISKS);
    print_with_substitution(buffer);
    printf("\n\n<p>\n\n");
+   printf("\n\n<h2>Chapter 1</h2>\n\n");
    hanoi();
    return 0;
 }
