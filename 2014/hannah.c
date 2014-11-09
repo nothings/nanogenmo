@@ -1,8 +1,6 @@
 // TODO:
-//   $Next should behave specially after chapter and paragraph breaks
 //   Each chapter Hannah takes a break from working it
 //   Reference the passing of time?
-//   Variations on the core 'move' message?
                                            
 #define STB_DEFINE
 #include "stb.h"
@@ -299,6 +297,7 @@ void move(int *pegs, int a, int b)
    first=0;
    starting_chapter=0;
    starting_para=0;
+   prefix_para = 0;
 
    // probably this never happens, but to be on the safe side, never print both events
    if (been_a_while && first_seen)
