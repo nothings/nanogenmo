@@ -1,0 +1,486 @@
+20071102NYKCLE	1	00:48:00	Start of 1st Quarter
+20071102NYKCLE	2	00:48:00	 Jump Ball Ilgauskas vs Curry
+20071102NYKCLE	3	00:47:38	[CLE 3-0] Gibson 3pt Shot: Made (3 PTS) Assist: James (1 AST)
+20071102NYKCLE	4	00:47:38	[NYK] Marbury Foul:Shooting (1 PF)
+20071102NYKCLE	5	00:47:38	[CLE 4-0] Gibson Free Throw 1 of 1 (4 PTS)
+20071102NYKCLE	6	00:47:29	[CLE] Gibson Foul:Shooting (1 PF)
+20071102NYKCLE	7	00:47:29	[NYK 1-4] Crawford Free Throw 1 of 2 (1 PTS)
+20071102NYKCLE	8	00:47:29	[NYK 2-4] Crawford Free Throw 2 of 2 (2 PTS)
+20071102NYKCLE	9	00:47:16	[CLE] James Jump Shot: Missed
+20071102NYKCLE	10	00:47:15	[NYK] Marbury Rebound (Off:0 Def:1)
+20071102NYKCLE	11	00:47:09	[NYK] Marbury Layup Shot: Missed
+20071102NYKCLE	12	00:47:08	[NYK] Marbury Rebound (Off:1 Def:1)
+20071102NYKCLE	13	00:47:08	[CLE] Hughes Foul:Shooting (1 PF)
+20071102NYKCLE	14	00:47:08	[NYK 3-4] Marbury Free Throw 1 of 2 (1 PTS)
+20071102NYKCLE	15	00:47:08	[NYK 4-4] Marbury Free Throw 2 of 2 (2 PTS)
+20071102NYKCLE	16	00:46:50	[CLE 6-4] Ilgauskas Alley Oop Layup shot: Made (2 PTS) Assist: Gooden (1 AST)
+20071102NYKCLE	17	00:46:33	[NYK 6-6] Crawford Fade Away Jumper Shot: Made (4 PTS)
+20071102NYKCLE	18	00:46:16	[CLE] Ilgauskas Jump Shot: Missed
+20071102NYKCLE	19	00:46:15	[NYK] Curry Rebound (Off:0 Def:1)
+20071102NYKCLE	20	00:46:07	[NYK 8-6] Marbury Layup Shot: Made (4 PTS)
+20071102NYKCLE	21	00:45:49	[CLE 8-8] Gibson Jump Shot: Made (6 PTS)
+20071102NYKCLE	22	00:45:31	[NYK 10-8] Randolph Jump Shot: Made (2 PTS) Assist: Marbury (1 AST)
+20071102NYKCLE	23	00:45:11	[CLE] Gooden Jump Shot: Missed
+20071102NYKCLE	24	00:45:10	[NYK] Richardson Rebound (Off:0 Def:1)
+20071102NYKCLE	25	00:45:03	[NYK] Marbury Layup Shot: Missed
+20071102NYKCLE	26	00:45:02	[CLE] Ilgauskas Rebound (Off:0 Def:1)
+20071102NYKCLE	27	00:44:56	[CLE 10-10] Gibson Jump Shot: Made (8 PTS) Assist: Hughes (1 AST)
+20071102NYKCLE	28	00:44:36	[NYK] Randolph Turnaround Jump Shot: Missed
+20071102NYKCLE	29	00:44:35	[CLE] Gooden Rebound (Off:0 Def:1)
+20071102NYKCLE	30	00:44:33	[NYK] Richardson Foul:Shooting (1 PF)
+20071102NYKCLE	31	00:44:33	[CLE 11-10] James Free Throw 1 of 2 (1 PTS)
+20071102NYKCLE	32	00:44:33	[CLE 12-10] James Free Throw 2 of 2 (2 PTS)
+20071102NYKCLE	33	00:44:15	[NYK] Curry Jump Shot: Missed
+20071102NYKCLE	34	00:44:14	[CLE] Ilgauskas Rebound (Off:0 Def:2)
+20071102NYKCLE	35	00:44:03	[CLE 14-10] James Fade Away Jumper Shot: Made (4 PTS)
+20071102NYKCLE	36	00:43:38	[NYK] Randolph Jump Hook Shot: Missed
+20071102NYKCLE	37	00:43:33	[NYK 12-14] Randolph Layup Shot: Made (4 PTS)
+20071102NYKCLE	38	00:43:33	[NYK] Randolph Rebound (Off:1 Def:0)
+20071102NYKCLE	39	00:43:16	[CLE] Gooden Jump Hook Shot: Missed
+20071102NYKCLE	40	00:43:14	[CLE 16-12] Gooden Tip Shot: Made (2 PTS)
+20071102NYKCLE	41	00:43:14	[CLE] Gooden Rebound (Off:1 Def:1)
+20071102NYKCLE	42	00:43:01	[NYK 14-16] Randolph Jump Shot: Made (6 PTS) Assist: Marbury (2 AST)
+20071102NYKCLE	43	00:42:46	[CLE 19-14] Gibson 3pt Shot: Made (11 PTS) Assist: Ilgauskas (1 AST)
+20071102NYKCLE	44	00:42:32	[NYK] Randolph Turnover:Bad Pass (1 TO) Steal:Gooden (1 ST)
+20071102NYKCLE	45	00:42:28	[CLE] Gooden Turnover:Bad Pass (1 TO)
+20071102NYKCLE	46	00:42:14	[NYK 17-19] Richardson 3pt Shot: Made (3 PTS)
+20071102NYKCLE	47	00:41:50	[CLE 21-17] Hughes Jump Shot: Made (2 PTS)
+20071102NYKCLE	48	00:41:34	[NYK 19-21] Curry Alley Oop Dunk Shot: Made (2 PTS) Assist: Crawford (1 AST)
+20071102NYKCLE	49	00:41:16	[CLE] James Jump Shot: Missed
+20071102NYKCLE	50	00:41:15	[NYK] Randolph Rebound (Off:1 Def:1)
+20071102NYKCLE	51	00:40:50	[NYK 21-21] Curry Tip Shot: Made (4 PTS)
+20071102NYKCLE	52	00:40:50	[CLE] Team Timeout:Regular
+20071102NYKCLE	53	00:40:34	[CLE] Ilgauskas Jump Shot: Missed
+20071102NYKCLE	54	00:40:33	[NYK] Randolph Rebound (Off:1 Def:2)
+20071102NYKCLE	55	00:40:21	[NYK 24-21] Richardson 3pt Shot: Made (6 PTS) Assist: Crawford (2 AST)
+20071102NYKCLE	56	00:40:12	[CLE] Hughes Turnover:Lost Ball (1 TO) Steal:Crawford (1 ST)
+20071102NYKCLE	57	00:40:11	[CLE] Gooden Foul:Personal (1 PF)
+20071102NYKCLE	58	00:40:11	[CLE] Ilgauskas Substitution replaced by Dw. Jones
+20071102NYKCLE	59	00:40:01	[NYK 26-21] Curry Jump Hook Shot: Made (6 PTS) Assist: Randolph (1 AST)
+20071102NYKCLE	60	00:39:45	[CLE 24-26] Hughes 3pt Shot: Made (5 PTS)
+20071102NYKCLE	61	00:39:25	[NYK] Crawford Jump Shot: Missed Block: Gibson (1 BLK)
+20071102NYKCLE	62	00:39:23	[NYK] Crawford Rebound (Off:1 Def:0)
+20071102NYKCLE	63	00:39:22	[NYK 28-24] Crawford Jump Shot: Made (6 PTS)
+20071102NYKCLE	64	00:39:13	[CLE] Gooden Layup Shot: Missed Block: Randolph (1 BLK)
+20071102NYKCLE	65	00:39:13	[CLE] Team Rebound
+20071102NYKCLE	66	00:39:13	[NYK] Randolph Substitution replaced by Lee
+20071102NYKCLE	68	00:39:13	[NYK] Marbury Substitution replaced by Robinson
+20071102NYKCLE	67	00:39:13	[CLE] Gibson Substitution replaced by D. Jones
+20071102NYKCLE	69	00:39:00	[CLE 26-28] Gooden Jump Shot: Made (4 PTS)
+20071102NYKCLE	70	00:38:39	[CLE] Gooden Foul:Personal (2 PF)
+20071102NYKCLE	71	00:38:39	[NYK] Team Timeout:Regular
+20071102NYKCLE	72	00:38:39	[CLE] Gooden Substitution replaced by Marshall
+20071102NYKCLE	73	00:38:27	[NYK 30-26] Crawford Jump Shot: Made (8 PTS)
+20071102NYKCLE	74	00:37:57	[CLE 29-30] James 3pt Shot: Made (7 PTS) Assist: Marshall (1 AST)
+20071102NYKCLE	75	00:37:45	[CLE] Dw. Jones Foul:Shooting (1 PF)
+20071102NYKCLE	76	00:37:45	[NYK] Curry Free Throw 1 of 2 missed
+20071102NYKCLE	77	00:37:45	[NYK] Team Rebound
+20071102NYKCLE	78	00:37:45	[NYK] Richardson Substitution replaced by Balkman
+20071102NYKCLE	79	00:37:45	[NYK] Curry Free Throw 2 of 2 missed
+20071102NYKCLE	80	00:37:44	[CLE] James Rebound (Off:0 Def:1)
+20071102NYKCLE	81	00:37:40	[NYK] Balkman Foul:Personal (1 PF)
+20071102NYKCLE	82	00:37:40	[CLE] Hughes Substitution replaced by D. Brown
+20071102NYKCLE	83	00:37:36	[NYK] Balkman Foul:Personal (2 PF)
+20071102NYKCLE	84	00:37:36	[CLE 30-30] James Free Throw 1 of 2 (8 PTS)
+20071102NYKCLE	85	00:37:36	[CLE 31-30] James Free Throw 2 of 2 (9 PTS)
+20071102NYKCLE	86	00:37:14	[NYK] Robinson Jump Shot: Missed Block: James (1 BLK)
+20071102NYKCLE	87	00:37:14	[NYK] Team Rebound
+20071102NYKCLE	88	00:37:10	[NYK] Curry Jump Shot: Missed
+20071102NYKCLE	89	00:37:09	[CLE] Dw. Jones Rebound (Off:0 Def:1)
+20071102NYKCLE	90	00:37:01	[NYK] Balkman Foul:Shooting (3 PF)
+20071102NYKCLE	91	00:37:01	[CLE] James Free Throw 1 of 2 missed
+20071102NYKCLE	92	00:37:01	[CLE] Team Rebound
+20071102NYKCLE	93	00:37:01	[NYK] Balkman Substitution replaced by Richardson
+20071102NYKCLE	94	00:37:01	[CLE 32-30] James Free Throw 2 of 2 (10 PTS)
+20071102NYKCLE	95	00:36:47	[NYK 32-32] Curry Turnaround Hook Shot: Made (8 PTS)
+20071102NYKCLE	96	00:36:32	[CLE] James Turnover:Bad Pass (1 TO)
+20071102NYKCLE	97	00:36:24	[NYK] Robinson Jump Shot: Missed
+20071102NYKCLE	98	00:36:23	[NYK] Lee Rebound (Off:1 Def:0)
+20071102NYKCLE	99	00:36:21	[NYK 34-32] Curry Layup Shot: Made (10 PTS) Assist: Lee (1 AST)
+20071102NYKCLE	100	00:36:00	[CLE] Marshall 3pt Shot: Missed
+20071102NYKCLE	101	00:36:00	[NYK] Curry Rebound (Off:0 Def:2)
+20071102NYKCLE	102	00:36:00	End of 1st Quarter
+20071102NYKCLE	103	00:35:47	[NYK] Randolph Jump Shot: Missed
+20071102NYKCLE	104	00:35:46	[CLE] D. Brown Rebound (Off:0 Def:1)
+20071102NYKCLE	105	00:35:21	[CLE] Gibson 3pt Shot: Missed
+20071102NYKCLE	106	00:35:20	[CLE] Ilgauskas Rebound (Off:1 Def:2)
+20071102NYKCLE	107	00:35:19	[CLE] Ilgauskas Layup Shot: Missed
+20071102NYKCLE	108	00:35:17	[NYK] Randolph Rebound (Off:1 Def:3)
+20071102NYKCLE	109	00:35:12	[NYK] Marbury Layup Shot: Missed
+20071102NYKCLE	110	00:35:11	[CLE] Ilgauskas Rebound (Off:1 Def:3)
+20071102NYKCLE	111	00:34:53	[CLE] Ilgauskas Turnover:Bad Pass (1 TO) Steal:Randolph (1 ST)
+20071102NYKCLE	112	00:34:33	[NYK] Randolph Turnaround Jump Shot: Missed
+20071102NYKCLE	113	00:34:32	[CLE] Marshall Rebound (Off:0 Def:1)
+20071102NYKCLE	114	00:34:15	[CLE] D. Brown 3pt Shot: Missed
+20071102NYKCLE	115	00:34:14	[NYK] Jones Rebound (Off:0 Def:1)
+20071102NYKCLE	116	00:34:04	[NYK] Jones Turnover:Bad Pass (1 TO)
+20071102NYKCLE	117	00:34:04	[CLE] Marshall Substitution replaced by Gooden
+20071102NYKCLE	118	00:33:50	[NYK] Randolph Foul:Personal (1 PF)
+20071102NYKCLE	119	00:33:42	[CLE] Gooden Jump Shot: Missed
+20071102NYKCLE	120	00:33:41	[NYK] Robinson Rebound (Off:0 Def:1)
+20071102NYKCLE	121	00:33:31	[NYK] Lee Dunk Shot: Missed
+20071102NYKCLE	122	00:33:29	[CLE] D. Brown Rebound (Off:0 Def:2)
+20071102NYKCLE	123	00:33:23	[CLE] D. Brown Layup Shot: Missed
+20071102NYKCLE	124	00:33:21	[CLE 34-34] Gooden Putback Dunk Shot: Made (6 PTS)
+20071102NYKCLE	125	00:33:21	[CLE] Gooden Rebound (Off:2 Def:1)
+20071102NYKCLE	126	00:33:04	[NYK] Robinson Turnover:Traveling (1 TO)
+20071102NYKCLE	127	00:33:04	[CLE] D. Brown Substitution replaced by Hughes
+20071102NYKCLE	128	00:32:50	[CLE] Hughes Jump Shot: Missed Block: Dw. Jones (1 BLK)
+20071102NYKCLE	129	00:32:49	[NYK] Randolph Rebound (Off:1 Def:4)
+20071102NYKCLE	130	00:32:31	[NYK 36-34] Lee Jump Shot: Made (2 PTS)
+20071102NYKCLE	131	00:32:25	[CLE] Team Timeout:Regular
+20071102NYKCLE	132	00:32:25	[CLE] D. Jones Substitution replaced by James
+20071102NYKCLE	133	00:32:17	[CLE] Ilgauskas Foul:Offensive (1 PF)
+20071102NYKCLE	134	00:32:17	[CLE] Ilgauskas Turnover:Foul (2 TO)
+20071102NYKCLE	135	00:32:17	[NYK] Jones Substitution replaced by Richardson
+20071102NYKCLE	136	00:32:00	[NYK 39-34] Robinson 3pt Shot: Made (3 PTS) Assist: Lee (2 AST)
+20071102NYKCLE	137	00:31:38	[NYK] Lee Foul:Shooting (1 PF)
+20071102NYKCLE	138	00:31:38	[CLE 35-39] Gibson Free Throw 1 of 2 (12 PTS)
+20071102NYKCLE	139	00:31:38	[CLE] Gibson Free Throw 2 of 2 missed
+20071102NYKCLE	140	00:31:37	[NYK] Lee Rebound (Off:1 Def:1)
+20071102NYKCLE	141	00:31:25	[NYK] Richardson 3pt Shot: Missed
+20071102NYKCLE	142	00:31:24	[CLE] Ilgauskas Rebound (Off:1 Def:4)
+20071102NYKCLE	143	00:31:19	[CLE] Gibson Foul:Offensive (2 PF)
+20071102NYKCLE	144	00:31:19	[CLE] Gibson Turnover:Foul (1 TO)
+20071102NYKCLE	145	00:30:55	[NYK 41-35] Randolph Jump Shot: Made (8 PTS) Assist: Marbury (3 AST)
+20071102NYKCLE	146	00:30:43	[CLE 37-41] Gooden Jump Shot: Made (8 PTS)
+20071102NYKCLE	147	00:30:28	[NYK] Robinson 3pt Shot: Missed
+20071102NYKCLE	148	00:30:27	[CLE] Ilgauskas Rebound (Off:1 Def:5)
+20071102NYKCLE	149	00:30:05	[CLE 39-41] James Running Bank shot: Made (12 PTS)
+20071102NYKCLE	150	00:29:47	[NYK 43-39] Lee Layup Shot: Made (4 PTS)
+20071102NYKCLE	151	00:29:31	[CLE] Hughes Turnover:Bad Pass (2 TO) Steal:Randolph (2 ST)
+20071102NYKCLE	152	00:29:26	[NYK] Randolph Turnover:Out of Bounds Lost Ball Turnover (2 TO)
+20071102NYKCLE	153	00:29:26	 Timeout: Official
+20071102NYKCLE	154	00:29:00	[CLE] James Jump Shot: Missed
+20071102NYKCLE	155	00:28:58	[NYK] Lee Rebound (Off:1 Def:2)
+20071102NYKCLE	156	00:28:52	[NYK] Marbury Turnover:Palming Turnover (1 TO)
+20071102NYKCLE	157	00:28:46	[CLE 41-43] Hughes Dunk Shot: Made (7 PTS) Assist: Gibson (1 AST)
+20071102NYKCLE	158	00:28:25	[NYK 45-41] Lee Jump Shot: Made (6 PTS) Assist: Robinson (1 AST)
+20071102NYKCLE	159	00:28:21	[NYK] Richardson Foul:Shooting (2 PF)
+20071102NYKCLE	160	00:28:21	[NYK] Lee Substitution replaced by Curry
+20071102NYKCLE	161	00:28:21	[NYK] Robinson Substitution replaced by Crawford
+20071102NYKCLE	162	00:28:21	[CLE] James Free Throw 1 of 2 missed
+20071102NYKCLE	163	00:28:21	[CLE] Team Rebound
+20071102NYKCLE	164	00:28:21	[CLE] James Free Throw 2 of 2 missed
+20071102NYKCLE	165	00:28:18	[NYK] Curry Rebound (Off:0 Def:3)
+20071102NYKCLE	166	00:28:09	[NYK] Curry Turnover:Lost Ball (1 TO) Steal:Gooden (2 ST)
+20071102NYKCLE	167	00:28:04	[CLE] Gibson 3pt Shot: Missed
+20071102NYKCLE	168	00:28:04	[NYK] Team Rebound
+20071102NYKCLE	169	00:28:04	[CLE] Gooden Foul:Loose Ball (3 PF)
+20071102NYKCLE	170	00:28:04	[CLE] Gooden Substitution replaced by Dw. Jones
+20071102NYKCLE	171	00:27:46	[NYK] Randolph Jump Hook Shot: Missed
+20071102NYKCLE	172	00:27:44	[CLE] Ilgauskas Rebound (Off:1 Def:6)
+20071102NYKCLE	173	00:27:32	[CLE 43-45] James Jump Bank Shot: Made (14 PTS)
+20071102NYKCLE	174	00:27:10	[NYK 47-43] Crawford Running Bank shot: Made (10 PTS)
+20071102NYKCLE	175	00:26:59	[CLE] James 3pt Shot: Missed
+20071102NYKCLE	176	00:26:57	[CLE] Gibson Rebound (Off:1 Def:0)
+20071102NYKCLE	177	00:26:55	[CLE 45-47] James Alley Oop Layup shot: Made (16 PTS) Assist: Hughes (2 AST)
+20071102NYKCLE	178	00:26:36	[NYK] Randolph Jump Shot: Missed
+20071102NYKCLE	179	00:26:35	[CLE] Ilgauskas Rebound (Off:1 Def:7)
+20071102NYKCLE	180	00:26:27	[NYK] Richardson Foul:Shooting (3 PF)
+20071102NYKCLE	181	00:26:27	[NYK] Team Timeout:Regular
+20071102NYKCLE	182	00:26:27	[NYK] Richardson Substitution replaced by Jones
+20071102NYKCLE	183	00:26:27	[CLE 46-47] James Free Throw 1 of 2 (17 PTS)
+20071102NYKCLE	184	00:26:27	[CLE] James Free Throw 2 of 2 missed
+20071102NYKCLE	185	00:26:26	[CLE] James Rebound (Off:1 Def:1)
+20071102NYKCLE	186	00:26:26	[CLE 48-47] James Fade Away Jumper Shot: Made (19 PTS)
+20071102NYKCLE	187	00:26:26	[NYK] Crawford Foul:Shooting (1 PF)
+20071102NYKCLE	188	00:26:26	[CLE 49-47] James Free Throw 1 of 1 (20 PTS)
+20071102NYKCLE	189	00:26:16	[NYK 49-49] Curry Jump Shot: Made (12 PTS) Assist: Marbury (4 AST)
+20071102NYKCLE	190	00:26:16	[CLE] Dw. Jones Foul:Shooting (2 PF)
+20071102NYKCLE	191	00:26:16	[NYK] Curry Free Throw 1 of 1 missed
+20071102NYKCLE	192	00:26:15	[NYK] Randolph Rebound (Off:2 Def:4)
+20071102NYKCLE	193	00:26:13	[NYK 51-49] Randolph Layup Shot: Made (10 PTS)
+20071102NYKCLE	194	00:25:46	[CLE] Gibson 3pt Shot: Missed
+20071102NYKCLE	195	00:25:44	[NYK] Curry Rebound (Off:0 Def:4)
+20071102NYKCLE	196	00:25:39	[CLE] Hughes Foul:Shooting (2 PF)
+20071102NYKCLE	197	00:25:39	[NYK] Marbury Free Throw 1 of 2 missed
+20071102NYKCLE	198	00:25:39	[NYK] Team Rebound
+20071102NYKCLE	199	00:25:39	[CLE] Hughes Substitution replaced by D. Jones
+20071102NYKCLE	200	00:25:39	[NYK 52-49] Marbury Free Throw 2 of 2 (5 PTS)
+20071102NYKCLE	201	00:25:29	[CLE] Gibson Jump Shot: Missed Block: Curry (1 BLK)
+20071102NYKCLE	202	00:25:27	[CLE] James Rebound (Off:2 Def:1)
+20071102NYKCLE	203	00:25:23	[CLE] James Turnaround Jump Shot: Missed
+20071102NYKCLE	204	00:25:22	[CLE] Team Rebound
+20071102NYKCLE	205	00:25:19	[CLE] James Layup Shot: Missed
+20071102NYKCLE	206	00:25:18	[CLE] James Rebound (Off:3 Def:1)
+20071102NYKCLE	207	00:25:16	[CLE 51-52] James Putback Layup Shot: Made (22 PTS)
+20071102NYKCLE	208	00:25:02	[CLE] Gibson Substitution replaced by D. Brown
+20071102NYKCLE	209	00:24:59	[NYK] Crawford Jump Shot: Missed
+20071102NYKCLE	210	00:24:58	[CLE] Dw. Jones Rebound (Off:0 Def:2)
+20071102NYKCLE	211	00:24:51	[CLE 54-52] D. Jones 3pt Shot: Made (3 PTS) Assist: James (2 AST)
+20071102NYKCLE	212	00:24:38	[NYK] Marbury Jump Shot: Missed
+20071102NYKCLE	213	00:24:37	[CLE] D. Brown Rebound (Off:0 Def:3)
+20071102NYKCLE	214	00:24:16	[CLE] James Jump Bank Shot: Missed
+20071102NYKCLE	215	00:24:15	[NYK] Randolph Rebound (Off:2 Def:5)
+20071102NYKCLE	216	00:24:13	[NYK] Randolph Layup Shot: Missed
+20071102NYKCLE	217	00:24:13	[NYK 54-54] Curry Tip Shot: Made (14 PTS)
+20071102NYKCLE	218	00:24:13	[NYK] Curry Rebound (Off:1 Def:4)
+20071102NYKCLE	219	00:24:06	[CLE] Team Timeout:Short
+20071102NYKCLE	220	00:24:06	[CLE] D. Jones Substitution replaced by Gibson
+20071102NYKCLE	222	00:24:06	[CLE] D. Brown Substitution replaced by Hughes
+20071102NYKCLE	221	00:24:06	[NYK] Crawford Substitution replaced by Lee
+20071102NYKCLE	223	00:24:06	[NYK] Curry Substitution replaced by Crawford
+20071102NYKCLE	224	00:24:04	[NYK] Jones Foul:Personal (1 PF)
+20071102NYKCLE	225	00:24:04	[CLE] Hughes Substitution replaced by D. Jones
+20071102NYKCLE	226	00:24:04	[CLE] Gibson Substitution replaced by D. Brown
+20071102NYKCLE	227	00:24:04	[CLE] James Free Throw 1 of 2 missed
+20071102NYKCLE	228	00:24:04	[CLE] Team Rebound
+20071102NYKCLE	229	00:24:04	[NYK] Team Timeout:Short
+20071102NYKCLE	230	00:24:04	[CLE] Ilgauskas Substitution replaced by Newble
+20071102NYKCLE	231	00:24:04	[NYK] Jones Substitution replaced by Curry
+20071102NYKCLE	232	00:24:04	[CLE 55-54] James Free Throw 2 of 2 (23 PTS)
+20071102NYKCLE	233	00:24:00	[NYK] Crawford 3pt Shot: Missed
+20071102NYKCLE	234	00:24:00	[NYK] Team Rebound
+20071102NYKCLE	235	00:24:00	End of 2nd Quarter
+20071102NYKCLE	236	00:23:46	[CLE] Ilgauskas Foul:Personal (2 PF)
+20071102NYKCLE	237	00:23:35	[NYK] Curry Jump Shot: Missed
+20071102NYKCLE	238	00:23:34	[CLE] Team Rebound
+20071102NYKCLE	239	00:23:20	[CLE] James Jump Shot: Missed
+20071102NYKCLE	240	00:23:19	[NYK] Crawford Rebound (Off:1 Def:1)
+20071102NYKCLE	241	00:23:10	[NYK 56-55] Randolph Jump Hook Shot: Made (12 PTS) Assist: Marbury (5 AST)
+20071102NYKCLE	242	00:22:49	[CLE 57-56] Gooden Jump Shot: Made (10 PTS) Assist: Hughes (3 AST)
+20071102NYKCLE	243	00:22:26	[NYK 58-57] Randolph Jump Shot: Made (14 PTS)
+20071102NYKCLE	244	00:22:15	[CLE 59-58] Hughes Driving Finger Roll Layup Shot: Made (9 PTS)
+20071102NYKCLE	245	00:21:56	[CLE] Hughes Foul:Shooting (3 PF)
+20071102NYKCLE	246	00:21:56	[NYK 59-59] Crawford Free Throw 1 of 2 (11 PTS)
+20071102NYKCLE	247	00:21:56	[NYK 60-59] Crawford Free Throw 2 of 2 (12 PTS)
+20071102NYKCLE	248	00:21:45	[CLE 62-60] James 3pt Shot: Made (26 PTS) Assist: Gibson (2 AST)
+20071102NYKCLE	249	00:21:23	[NYK 62-62] Curry Layup Shot: Made (16 PTS)
+20071102NYKCLE	250	00:21:10	[CLE] Hughes 3pt Shot: Missed
+20071102NYKCLE	251	00:21:09	[NYK] Randolph Rebound (Off:2 Def:6)
+20071102NYKCLE	252	00:20:57	[NYK] Marbury Jump Shot: Missed
+20071102NYKCLE	253	00:20:55	[CLE] Ilgauskas Rebound (Off:1 Def:8)
+20071102NYKCLE	254	00:20:44	[CLE] Gooden Jump Shot: Missed
+20071102NYKCLE	255	00:20:43	[CLE] Ilgauskas Rebound (Off:2 Def:8)
+20071102NYKCLE	256	00:20:32	[CLE] Hughes Layup Shot: Missed Block: Crawford (1 BLK)
+20071102NYKCLE	257	00:20:32	[CLE] Hughes Rebound (Off:1 Def:0)
+20071102NYKCLE	258	00:20:32	[CLE] Hughes Jump Shot: Missed
+20071102NYKCLE	259	00:20:30	[NYK] Randolph Rebound (Off:2 Def:7)
+20071102NYKCLE	260	00:20:17	[NYK] Curry Jump Shot: Missed
+20071102NYKCLE	261	00:20:15	[CLE] Ilgauskas Rebound (Off:2 Def:9)
+20071102NYKCLE	262	00:20:02	[CLE] Hughes Jump Shot: Missed
+20071102NYKCLE	263	00:19:59	[NYK] Randolph Rebound (Off:2 Def:8)
+20071102NYKCLE	264	00:19:48	[NYK] Marbury Substitution replaced by Robinson
+20071102NYKCLE	265	00:19:41	[NYK 65-62] Crawford 3pt Shot: Made (15 PTS)
+20071102NYKCLE	266	00:19:26	[CLE 64-65] Gooden Jump Hook Shot: Made (12 PTS) Assist: Hughes (4 AST)
+20071102NYKCLE	267	00:19:26	[NYK] Curry Violation:Defensive Goaltending
+20071102NYKCLE	268	00:19:08	[NYK 67-64] Randolph Jump Shot: Made (16 PTS)
+20071102NYKCLE	269	00:18:51	[CLE 66-67] Ilgauskas Jump Hook Shot: Made (4 PTS)
+20071102NYKCLE	270	00:18:51	[NYK] Curry Foul:Shooting (1 PF)
+20071102NYKCLE	271	00:18:51	[CLE 67-67] Ilgauskas Free Throw 1 of 1 (5 PTS)
+20071102NYKCLE	272	00:18:36	[NYK 70-67] Robinson 3pt Shot: Made (6 PTS) Assist: Curry (1 AST)
+20071102NYKCLE	273	00:18:17	[CLE] Ilgauskas Jump Shot: Missed
+20071102NYKCLE	274	00:18:16	[NYK] Robinson Rebound (Off:0 Def:2)
+20071102NYKCLE	275	00:18:07	[NYK 72-67] Crawford Dunk Shot: Made (17 PTS) Assist: Randolph (2 AST)
+20071102NYKCLE	276	00:18:07	[CLE] Team Timeout:Regular
+20071102NYKCLE	277	00:17:43	[CLE] James 3pt Shot: Missed
+20071102NYKCLE	278	00:17:42	[NYK] Robinson Rebound (Off:0 Def:3)
+20071102NYKCLE	279	00:17:28	[NYK] Curry Jump Hook Shot: Missed
+20071102NYKCLE	280	00:17:27	[CLE] Hughes Rebound (Off:1 Def:1)
+20071102NYKCLE	281	00:17:19	[CLE] Ilgauskas Turnover:3 Second Violation (3 TO)
+20071102NYKCLE	282	00:17:04	[NYK] Randolph Jump Shot: Missed
+20071102NYKCLE	283	00:17:03	[CLE] Ilgauskas Rebound (Off:2 Def:10)
+20071102NYKCLE	284	00:16:56	[CLE 69-72] Gooden Dunk Shot: Made (14 PTS) Assist: James (3 AST)
+20071102NYKCLE	285	00:16:39	[NYK] Randolph Layup Shot: Missed
+20071102NYKCLE	286	00:16:38	[CLE] Hughes Rebound (Off:1 Def:2)
+20071102NYKCLE	287	00:16:34	[CLE] Gibson Turnover:Traveling (2 TO)
+20071102NYKCLE	288	00:16:34	[NYK] Curry Substitution replaced by Lee
+20071102NYKCLE	289	00:16:34	[CLE] Ilgauskas Substitution replaced by Dw. Jones
+20071102NYKCLE	290	00:16:20	[NYK] Richardson Turnover:Bad Pass (1 TO) Steal:James (1 ST)
+20071102NYKCLE	291	00:16:09	[CLE] Gooden Jump Shot: Missed
+20071102NYKCLE	292	00:16:08	[NYK] Lee Rebound (Off:1 Def:3)
+20071102NYKCLE	293	00:15:58	[NYK] Crawford 3pt Shot: Missed
+20071102NYKCLE	294	00:15:57	[NYK] Robinson Rebound (Off:1 Def:3)
+20071102NYKCLE	295	00:15:50	[NYK] Team Timeout:Regular
+20071102NYKCLE	296	00:15:50	[NYK] Randolph Substitution replaced by Curry
+20071102NYKCLE	297	00:15:50	[CLE] Gibson Substitution replaced by D. Jones
+20071102NYKCLE	298	00:15:37	[NYK 75-69] Robinson 3pt Shot: Made (9 PTS) Assist: Crawford (3 AST)
+20071102NYKCLE	299	00:15:16	[CLE] James Layup Shot: Missed
+20071102NYKCLE	300	00:15:15	[NYK] Robinson Rebound (Off:1 Def:4)
+20071102NYKCLE	301	00:15:08	[NYK 78-69] Robinson 3pt Shot: Made (12 PTS) Assist: Richardson (1 AST)
+20071102NYKCLE	302	00:14:44	[CLE 72-78] James 3pt Shot: Made (29 PTS) Assist: Gooden (2 AST)
+20071102NYKCLE	303	00:14:21	[NYK] Crawford Turnover:Palming Turnover (1 TO)
+20071102NYKCLE	304	00:14:08	[CLE] Hughes Layup Shot: Missed Block: Lee (1 BLK)
+20071102NYKCLE	305	00:14:08	[CLE] Team Rebound
+20071102NYKCLE	306	00:14:04	[CLE] James Jump Shot: Missed
+20071102NYKCLE	307	00:14:03	[NYK] Team Rebound
+20071102NYKCLE	308	00:13:50	[CLE] Dw. Jones Foul:Personal (3 PF)
+20071102NYKCLE	309	00:13:50	[CLE] Hughes Substitution replaced by D. Brown
+20071102NYKCLE	310	00:13:50	[CLE] Gooden Substitution replaced by Marshall
+20071102NYKCLE	311	00:13:38	[NYK] Robinson Jump Shot: Missed Block: Jones (1 BLK)
+20071102NYKCLE	312	00:13:38	[NYK] Team Rebound
+20071102NYKCLE	313	00:13:35	[NYK] Crawford Turnaround Jump Shot: Missed
+20071102NYKCLE	314	00:13:34	[NYK] Team Rebound
+20071102NYKCLE	315	00:13:23	[CLE] Dw. Jones Foul:Shooting (4 PF)
+20071102NYKCLE	316	00:13:23	[NYK] Curry Free Throw 1 of 2 missed
+20071102NYKCLE	317	00:13:23	[NYK] Team Rebound
+20071102NYKCLE	318	00:13:23	[NYK] Curry Free Throw 2 of 2 missed
+20071102NYKCLE	319	00:13:22	[CLE] James Rebound (Off:3 Def:2)
+20071102NYKCLE	320	00:13:08	[CLE] Marshall 3pt Shot: Missed
+20071102NYKCLE	321	00:13:06	[CLE] D. Jones Rebound (Off:1 Def:0)
+20071102NYKCLE	322	00:12:54	[CLE 75-78] D. Jones 3pt Shot: Made (6 PTS) Assist: James (4 AST)
+20071102NYKCLE	323	00:12:39	[NYK] Curry Layup Shot: Missed Block: Marshall (1 BLK)
+20071102NYKCLE	324	00:12:39	[NYK] Team Rebound
+20071102NYKCLE	325	00:12:33	[NYK 80-75] Crawford Jump Shot: Made (19 PTS)
+20071102NYKCLE	326	00:12:20	[NYK] Richardson Foul:Personal (4 PF)
+20071102NYKCLE	327	00:12:20	[NYK] Richardson Substitution replaced by Jones
+20071102NYKCLE	328	00:12:14	[CLE] James Turnover:Traveling (2 TO)
+20071102NYKCLE	329	00:12:14	[NYK] Curry Substitution replaced by Richardson
+20071102NYKCLE	330	00:12:14	[CLE] D. Jones Substitution replaced by Hughes
+20071102NYKCLE	331	00:12:01	[NYK] Crawford 3pt Shot: Missed
+20071102NYKCLE	332	00:12:00	[NYK] Richardson Tip Shot: Missed
+20071102NYKCLE	333	00:12:00	[NYK] Richardson Rebound (Off:1 Def:1)
+20071102NYKCLE	334	00:12:00	[NYK] Robinson Putback Layup Shot: Missed
+20071102NYKCLE	335	00:12:00	[NYK] Robinson Rebound (Off:2 Def:4)
+20071102NYKCLE	336	00:12:00	[NYK] Team Rebound
+20071102NYKCLE	337	00:12:00	End of 3rd Quarter
+20071102NYKCLE	338	00:11:37	[CLE 77-80] D. Jones Driving Layup Shot: Made (8 PTS)
+20071102NYKCLE	339	00:11:15	[NYK 82-77] Randolph Jump Shot: Made (18 PTS) Assist: Robinson (2 AST)
+20071102NYKCLE	340	00:10:55	[CLE 79-82] James Jump Shot: Made (31 PTS)
+20071102NYKCLE	341	00:10:38	[NYK] Randolph Turnover:Bad Pass (3 TO) Steal:James (2 ST)
+20071102NYKCLE	342	00:10:37	[NYK] Robinson Foul:Shooting (1 PF)
+20071102NYKCLE	343	00:10:37	[CLE 80-82] James Free Throw 1 of 2 (32 PTS)
+20071102NYKCLE	344	00:10:37	[NYK] Crawford Substitution replaced by Marbury
+20071102NYKCLE	345	00:10:37	[CLE 81-82] James Free Throw 2 of 2 (33 PTS)
+20071102NYKCLE	346	00:10:24	[NYK] Robinson Jump Shot: Missed
+20071102NYKCLE	347	00:10:24	[NYK] Team Rebound
+20071102NYKCLE	348	00:10:15	[NYK] Lee Layup Shot: Missed Block: Dw. Jones (2 BLK)
+20071102NYKCLE	349	00:10:15	[NYK] Lee Rebound (Off:2 Def:3)
+20071102NYKCLE	350	00:10:15	[CLE] D. Jones Foul:Personal (1 PF)
+20071102NYKCLE	351	00:10:04	[NYK] Marbury Jump Shot: Missed
+20071102NYKCLE	352	00:10:02	[NYK] Randolph Rebound (Off:3 Def:8)
+20071102NYKCLE	353	00:09:45	[NYK] Jones Turnover:Traveling (2 TO)
+20071102NYKCLE	354	00:09:21	[CLE] James Jump Shot: Missed
+20071102NYKCLE	355	00:09:20	[NYK] Lee Rebound (Off:2 Def:4)
+20071102NYKCLE	356	00:09:09	[NYK 84-81] Robinson Running Layup Shot: Made (14 PTS)
+20071102NYKCLE	357	00:08:47	[CLE] D. Jones Jump Shot: Missed
+20071102NYKCLE	358	00:08:46	[CLE] Dw. Jones Rebound (Off:1 Def:2)
+20071102NYKCLE	359	00:08:46	[CLE 83-84] Dw. Jones Putback Layup Shot: Made (2 PTS)
+20071102NYKCLE	360	00:08:46	[NYK] Randolph Foul:Shooting (2 PF)
+20071102NYKCLE	361	00:08:46	 Timeout: Official
+20071102NYKCLE	362	00:08:46	[NYK] Jones Substitution replaced by Richardson
+20071102NYKCLE	363	00:08:46	[CLE] Marshall Substitution replaced by Ilgauskas
+20071102NYKCLE	364	00:08:46	[CLE] Dw. Jones Free Throw 1 of 1 missed
+20071102NYKCLE	365	00:08:45	[NYK] Randolph Rebound (Off:3 Def:9)
+20071102NYKCLE	366	00:08:31	[CLE] Ilgauskas Foul:Personal (3 PF)
+20071102NYKCLE	367	00:08:18	[NYK] Randolph Turnover:Bad Pass (4 TO) Steal:James (3 ST)
+20071102NYKCLE	368	00:08:18	[NYK] Robinson Foul:Personal (2 PF)
+20071102NYKCLE	369	00:08:18	[NYK] Robinson Substitution replaced by Crawford
+20071102NYKCLE	370	00:08:07	[CLE] D. Brown 3pt Shot: Missed
+20071102NYKCLE	371	00:08:06	[NYK] Lee Rebound (Off:2 Def:5)
+20071102NYKCLE	372	00:07:59	[NYK 86-83] Marbury Jump Shot: Made (7 PTS)
+20071102NYKCLE	373	00:07:41	[CLE] Ilgauskas Turnover:Traveling (4 TO)
+20071102NYKCLE	374	00:07:41	[CLE] D. Jones Substitution replaced by Gibson
+20071102NYKCLE	375	00:07:41	[CLE] D. Brown Substitution replaced by Hughes
+20071102NYKCLE	376	00:07:26	[NYK] Randolph Jump Shot: Missed
+20071102NYKCLE	377	00:07:25	[CLE] James Rebound (Off:3 Def:3)
+20071102NYKCLE	378	00:07:15	[CLE 86-86] Gibson 3pt Shot: Made (15 PTS) Assist: James (5 AST)
+20071102NYKCLE	379	00:06:58	[NYK] Randolph Jump Shot: Missed Block: Ilgauskas (1 BLK)
+20071102NYKCLE	380	00:06:58	[NYK] Team Rebound
+20071102NYKCLE	381	00:06:58	[CLE] Dw. Jones Substitution replaced by Gooden
+20071102NYKCLE	382	00:06:51	[NYK] Marbury Layup Shot: Missed
+20071102NYKCLE	383	00:06:49	[NYK] Marbury Rebound (Off:2 Def:1)
+20071102NYKCLE	384	00:06:47	[NYK] Marbury Jump Shot: Missed
+20071102NYKCLE	385	00:06:45	[NYK] Randolph Tip Shot: Missed
+20071102NYKCLE	386	00:06:45	[NYK] Randolph Rebound (Off:4 Def:9)
+20071102NYKCLE	387	00:06:41	[CLE] Gooden Rebound (Off:2 Def:2)
+20071102NYKCLE	388	00:06:38	[CLE 88-86] James Running Layup Shot: Made (35 PTS)
+20071102NYKCLE	389	00:06:38	[NYK] Richardson Foul:Shooting (5 PF)
+20071102NYKCLE	390	00:06:38	[NYK] Richardson Substitution replaced by Curry
+20071102NYKCLE	391	00:06:38	[CLE 89-86] James Free Throw 1 of 1 (36 PTS)
+20071102NYKCLE	392	00:06:27	[NYK] Crawford Layup Shot: Missed
+20071102NYKCLE	393	00:06:27	[CLE] James Foul:Shooting (1 PF)
+20071102NYKCLE	394	00:06:27	[NYK] Lee Free Throw 1 of 2 missed
+20071102NYKCLE	395	00:06:27	[NYK] Team Rebound
+20071102NYKCLE	396	00:06:27	[NYK] Lee Rebound (Off:3 Def:5)
+20071102NYKCLE	397	00:06:27	[NYK 87-89] Lee Free Throw 2 of 2 (7 PTS)
+20071102NYKCLE	398	00:06:05	[CLE 92-87] Gibson 3pt Shot: Made (18 PTS) Assist: James (6 AST)
+20071102NYKCLE	399	00:05:49	[NYK 90-92] Marbury 3pt Shot: Made (10 PTS) Assist: Crawford (4 AST)
+20071102NYKCLE	400	00:05:26	[CLE 95-90] Gibson 3pt Shot: Made (21 PTS) Assist: James (7 AST)
+20071102NYKCLE	401	00:05:25	[NYK] Team Timeout:Regular
+20071102NYKCLE	402	00:05:08	[NYK] Curry Jump Shot: Missed Block: Ilgauskas (2 BLK)
+20071102NYKCLE	403	00:05:04	[CLE] Hughes Rebound (Off:1 Def:3)
+20071102NYKCLE	404	00:04:58	[CLE 98-90] Gibson 3pt Shot: Made (24 PTS) Assist: Hughes (5 AST)
+20071102NYKCLE	405	00:04:44	[CLE] Hughes Foul:Personal (4 PF)
+20071102NYKCLE	406	00:04:44	[NYK] Lee Substitution replaced by Richardson
+20071102NYKCLE	407	00:04:44	[NYK] Marbury Substitution replaced by Robinson
+20071102NYKCLE	408	00:04:27	[NYK] Richardson 3pt Shot: Missed
+20071102NYKCLE	409	00:04:26	[NYK] Randolph Rebound (Off:5 Def:9)
+20071102NYKCLE	410	00:04:24	[NYK] Randolph Layup Shot: Missed Block: Gibson (2 BLK)
+20071102NYKCLE	411	00:04:24	[NYK] Team Rebound
+20071102NYKCLE	412	00:04:14	[CLE] Ilgauskas Foul:Shooting (4 PF)
+20071102NYKCLE	413	00:04:14	[NYK 91-98] Crawford Free Throw 1 of 2 (20 PTS)
+20071102NYKCLE	414	00:04:14	[NYK 92-98] Crawford Free Throw 2 of 2 (21 PTS)
+20071102NYKCLE	415	00:03:53	[CLE] Ilgauskas Layup Shot: Missed
+20071102NYKCLE	416	00:03:53	[CLE] Team Rebound
+20071102NYKCLE	417	00:03:48	[NYK] Randolph Foul:Shooting (3 PF)
+20071102NYKCLE	418	00:03:48	[CLE] James Free Throw 1 of 2 missed
+20071102NYKCLE	419	00:03:48	[CLE] Team Rebound
+20071102NYKCLE	420	00:03:48	[CLE 99-92] James Free Throw 2 of 2 (37 PTS)
+20071102NYKCLE	421	00:03:31	[NYK 94-99] Curry Layup Shot: Made (18 PTS) Assist: Randolph (3 AST)
+20071102NYKCLE	422	00:03:09	[CLE 101-94] James Jump Shot: Made (39 PTS)
+20071102NYKCLE	423	00:02:53	[NYK] Crawford Jump Shot: Missed
+20071102NYKCLE	424	00:02:52	[CLE] Gooden Rebound (Off:2 Def:3)
+20071102NYKCLE	425	00:02:49	[CLE] Gooden Turnover:Lost Ball (2 TO) Steal:Robinson (1 ST)
+20071102NYKCLE	426	00:02:43	[NYK 96-101] Randolph Reverse Layup Shot: Made (20 PTS) Assist: Crawford (5 AST)
+20071102NYKCLE	427	00:02:35	[CLE 103-96] James Layup Shot: Made (41 PTS)
+20071102NYKCLE	428	00:02:33	[CLE] Hughes Foul:Shooting (5 PF)
+20071102NYKCLE	429	00:02:33	[CLE] Team Timeout:Regular
+20071102NYKCLE	430	00:02:33	[NYK] Randolph Free Throw 1 of 2 missed
+20071102NYKCLE	431	00:02:33	[NYK] Team Rebound
+20071102NYKCLE	432	00:02:33	[NYK 97-103] Randolph Free Throw 2 of 2 (21 PTS)
+20071102NYKCLE	433	00:02:11	[CLE] James Jump Shot: Missed
+20071102NYKCLE	434	00:02:11	[CLE] Team Rebound
+20071102NYKCLE	435	00:02:11	[NYK] Curry Foul:Personal (2 PF)
+20071102NYKCLE	436	00:02:11	[CLE 104-97] Ilgauskas Free Throw 1 of 2 (6 PTS)
+20071102NYKCLE	437	00:02:11	[CLE 105-97] Ilgauskas Free Throw 2 of 2 (7 PTS)
+20071102NYKCLE	438	00:02:03	[NYK 99-105] Robinson Jump Shot: Made (16 PTS) Assist: Crawford (6 AST)
+20071102NYKCLE	439	00:01:36	[CLE] James Jump Shot: Missed
+20071102NYKCLE	440	00:01:35	[CLE] Gooden Rebound (Off:3 Def:3)
+20071102NYKCLE	441	00:01:15	[CLE] Hughes Jump Shot: Missed
+20071102NYKCLE	442	00:01:13	[NYK] Curry Rebound (Off:1 Def:5)
+20071102NYKCLE	443	00:01:04	[CLE] Gibson Foul:Personal (3 PF)
+20071102NYKCLE	444	00:01:04	[NYK] Robinson Free Throw 1 of 2 missed
+20071102NYKCLE	445	00:01:04	[NYK] Team Rebound
+20071102NYKCLE	446	00:01:04	[NYK] Curry Substitution replaced by Lee
+20071102NYKCLE	447	00:01:04	[NYK 100-105] Robinson Free Throw 2 of 2 (17 PTS)
+20071102NYKCLE	448	00:00:46	[CLE] James Jump Bank Shot: Missed
+20071102NYKCLE	449	00:00:44	[CLE] Gibson Rebound (Off:2 Def:0)
+20071102NYKCLE	450	00:00:24	[CLE] James Turnover:Lost Ball (3 TO) Steal:Crawford (2 ST)
+20071102NYKCLE	451	00:00:22	[CLE] Ilgauskas Foul:Personal (5 PF)
+20071102NYKCLE	452	00:00:22	[NYK 101-105] Crawford Free Throw 1 of 2 (22 PTS)
+20071102NYKCLE	453	00:00:22	[NYK] Richardson Substitution replaced by Marbury
+20071102NYKCLE	454	00:00:22	[NYK 102-105] Crawford Free Throw 2 of 2 (23 PTS)
+20071102NYKCLE	455	00:00:22	[CLE] Team Timeout:Regular
+20071102NYKCLE	456	00:00:22	[NYK] Randolph Substitution replaced by Balkman
+20071102NYKCLE	457	00:00:20	[NYK] Robinson Foul:Personal (3 PF)
+20071102NYKCLE	458	00:00:20	[CLE 106-102] Ilgauskas Free Throw 1 of 2 (8 PTS)
+20071102NYKCLE	460	00:00:20	[CLE] Gooden Substitution replaced by D. Brown
+20071102NYKCLE	459	00:00:20	[NYK] Balkman Substitution replaced by Richardson
+20071102NYKCLE	461	00:00:20	[NYK] Marbury Substitution replaced by Curry
+20071102NYKCLE	462	00:00:20	[NYK] Robinson Substitution replaced by Randolph
+20071102NYKCLE	463	00:00:20	[CLE] Ilgauskas Free Throw 2 of 2 missed
+20071102NYKCLE	464	00:00:19	[NYK] Curry Rebound (Off:1 Def:6)
+20071102NYKCLE	465	00:00:19	[NYK] Team Timeout:Regular
+20071102NYKCLE	466	00:00:19	[NYK] Curry Substitution replaced by Marbury
+20071102NYKCLE	467	00:00:19	[NYK] Lee Substitution replaced by Robinson
+20071102NYKCLE	468	00:00:19	[CLE] Ilgauskas Substitution replaced by Gooden
+20071102NYKCLE	469	00:00:15	[NYK 104-106] Crawford Driving Layup Shot: Made (25 PTS)
+20071102NYKCLE	470	00:00:13	[NYK] Marbury Foul:Personal (2 PF)
+20071102NYKCLE	471	00:00:13	[NYK] Marbury Substitution replaced by Curry
+20071102NYKCLE	472	00:00:13	[NYK] Robinson Substitution replaced by Lee
+20071102NYKCLE	473	00:00:13	[CLE 107-104] James Free Throw 1 of 2 (42 PTS)
+20071102NYKCLE	474	00:00:13	[CLE 108-104] James Free Throw 2 of 2 (43 PTS)
+20071102NYKCLE	475	00:00:13	[NYK] Team Timeout:Regular
+20071102NYKCLE	476	00:00:13	[NYK] Curry Substitution replaced by Marbury
+20071102NYKCLE	477	00:00:13	[NYK] Randolph Substitution replaced by Robinson
+20071102NYKCLE	478	00:00:07	[NYK] Richardson 3pt Shot: Missed
+20071102NYKCLE	479	00:00:04	[NYK] Team Rebound
+20071102NYKCLE	480	00:00:04	[NYK] Crawford Jump Shot: Missed
+20071102NYKCLE	481	00:00:04	[CLE] James Rebound (Off:3 Def:4)
+20071102NYKCLE	482	00:00:04	[NYK] Crawford Foul:Personal (2 PF)
+20071102NYKCLE	483	00:00:04	[CLE 109-104] James Free Throw 1 of 2 (45 PTS)
+20071102NYKCLE	484	00:00:04	[CLE 110-104] James Free Throw 2 of 2 (45 PTS)
+20071102NYKCLE	485	00:00:00	[NYK 106-110] Robinson Layup Shot: Made (19 PTS)
+20071102NYKCLE	486	00:00:00	End of 4th Quarter
