@@ -271,13 +271,13 @@ void sing(int voice, char *fmt, ...)
       last_player = 0;
 }
 
-int team[2][5];
+int team_roster[2][5];
 
 int slot(int t, int player)
 {
    int i;
    for (i=0; i < 5; ++i)
-      if (team[t][i] == player)
+      if (team_roster[t][i] == player)
          return i;
    assert(0);
    return 0;
@@ -285,28 +285,29 @@ int slot(int t, int player)
 
 void set_lineup(int t, int v1, int v2, int v3, int v4, int v5)
 {
-   team[t][0] = v1;
-   team[t][1] = v2;
-   team[t][2] = v3;
-   team[t][3] = v4;
-   team[t][4] = v5;
+   team_roster[t][0] = v1;
+   team_roster[t][1] = v2;
+   team_roster[t][2] = v3;
+   team_roster[t][3] = v4;
+   team_roster[t][4] = v5;
 }
 
 int score[2];
 
 typedef struct
 {
-   int points, assists, rebounds, turnovers, steals, blocks;
+   int points, assists, off_rebounds, def_rebounds, turnovers, steals, blocks, fouls;
+   int attempts, made;
    int layup_attempts, layup_made, layup_points;
    int jump_attempts, jump_made, jump_points;
-   int ft_attempts, ft_made, ft_points;
    int f3_attempts, f3_made, f3_points;
+   int ft_attempts, ft_made, ft_points;
 } player_stats;
 
 int cur_line;
 int last_shot_time;
 player_stats raw_stats[25];
-player_stats *players = raw_stats+12;
+player_stats *stats = raw_stats+12;
 
 enum
 {
@@ -342,19 +343,19 @@ enum
    F_hook,
    F_bank,
    F_fadeaway,
-   F_reverse,
+   F_reverse=6,
    F_tip,
    F_dunk,
    F_running,
-   F_running_bank,
+   F_running_bank=10,
    F_putback,
    F_putback_dunk,
    F_driving,
    F_driving_finger_roll,
-   F_alleyoop,
+   F_alleyoop=15,
    F_alleyoop_dunk,
 };
-                      
+
 enum
 {
    FOUL_none,
@@ -480,8 +481,8 @@ void process_substitution(void)
       int t = p1 < 0 ? TEAM_1 : TEAM_0;
       assert(p1*p2 > 0);
       for (i=0; i < 5; ++i) {
-         if (team[t][i] == p1) {
-            team[t][i] = p2;
+         if (team_roster[t][i] == p1) {
+            team_roster[t][i] = p2;
             break;
          }
       }
@@ -491,7 +492,7 @@ void process_substitution(void)
       for (i=0; i < 5; ++i)
          for (k=0; k < 5; ++k)
             if (i != k)
-               assert(team[t][i] != team[t][k]);
+               assert(team_roster[t][i] != team_roster[t][k]);
 
       substitute(t, p1, p2);
    }
@@ -500,15 +501,36 @@ void process_substitution(void)
 
 int who_was_fouled;
 int foul, foul_player, foul_time;
+int last_announced_possession_time;
+int force_announce_flag;
 
-void tpossess(int team)
+void set_tpossess(int team, int force_announce)
 {
-   if (game_state.possess_team != team) {
+   if (team != game_state.possess_team) {
+      if (force_announce >= 0 && team != -1) {
+         if (this_event_time > last_announced_possession_time + 90 || force_announce || force_announce_flag) {
+            switch (random_nonrepeat(4)) {
+               case 0: sing(V1, "# [has|have] the ball.", team); break;
+               case 1: sing(V1, "# with the ball.", team); break;
+               case 2: sing(V1, "# [has|have] possession.", team); break;
+               case 3: sing(V1, "# [has|have] control the ball.", team); break;
+               default: assert(0);
+            }
+            last_announced_possession_time = this_event_time;
+         }
+      }
       game_state.possess_team = team;
       game_state.possess_player = 0;
+   }
+   force_announce_flag = 0;
+}
+
+void tpossess(int team, int force_announce)
+{
+   if (game_state.possess_team != team) {
+      set_tpossess(team, force_announce);
       game_state.possess_time = this_event_time;
       game_state.possess_action_time = this_event_time;
-      sing(V1, "# [has|have] the ball.", team);
       // @TODO: need to decide how to really announce team possession changes
       // and ordering w.r.t rebounds that occured in previous event
    }
@@ -527,7 +549,7 @@ int take_possession(int tm)
 {
    // @TODO variations
    if (game_state.possess_player == 0) {
-      game_state.possess_player = team[tm][0];
+      game_state.possess_player = team_roster[tm][0];
       if (!is_closer_than(-0.5)) {
          sing(V1, "$ brings the ball up the court.", game_state.possess_player);
          game_state.position = 0;
@@ -567,13 +589,13 @@ void run_play(int ball_holder, float position, int end_of_play_time)
          sing(V1, "$ brings the ball up the court.", game_state.possess_player);
       game_state.position = 0;
       if (random(100) < 50)
-         pass_to(tm, team[tm][random(5)], tm  ? -0.75f : 0.75f);
+         pass_to(tm, team_roster[tm][random(5)], tm  ? -0.75f : 0.75f);
       pass_to(tm, ball_holder, position);
    } else {
       if (take_possession(tm))
          delta_time -= 2 + random(1);
       while (delta_time >= 0) {
-         pass_to(tm, team[tm][random(5)], tm ? -0.75f : 0.75f);
+         pass_to(tm, team_roster[tm][random(5)], tm ? -0.75f : 0.75f);
          delta_time -= 2 + random(1) + random(3)*(random(3)==0);
          delta_time -= 4; // @TODO tune
       }
@@ -601,7 +623,7 @@ void process_foul(int first_free_throw)
 
    // if nobody has possession, give it to the point guard   
    if (!game_state.possess_player)
-      game_state.possess_player = team[foul_player > 0][0];
+      game_state.possess_player = team_roster[foul_player > 0][0];
 
    // if nobody was fouled, make it whoever had possession last,
    if (who_was_fouled == 0)
@@ -628,14 +650,14 @@ int random_player(int tm, int player)
    int s = slot(tm, player);
    s += 1+random(4);
    s %= 5;
-   return team[tm][s];
+   return team_roster[tm][s];
 }
 
 int defender(int player)
 {
    int tm = player < 0 ? TEAM_1 : TEAM_0;
    int s = slot(tm, player);
-   return team[!tm][s];
+   return team_roster[!tm][s];
 }
 
 static int made_counts[20];
@@ -660,24 +682,54 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
       //printf("  Line: %d\n", cur_line);
       //sing(V1, "!!! FAST BREAK !!!");
    }
-   tpossess(tm);
+   tpossess(tm, 0);
+
+   if (made)
+      ++made_counts[flavor];
+   else
+      ++missed_counts[flavor];
 
    if (type == SHOT_layup) {
       if (assist) {
          run_play(assist, tm == 1 ? -0.75f : 0.75f, this_event_time-1);
 
+         switch (flavor) {
+            case F_none:
+               switch(random_nonrepeat(3))
+               {
+                  case 0: sing(V1, "% pas-ses it in to $ who puts it up... it's good.", assist, player); break;
+                  case 1: sing(V1, "% with a nice bounce pass, and $ lays it in.", assist, player); break;
+                  case 2: sing(V1, "% pas-ses it inside, $ with the ball, he goes for the lay up, two points.", assist, player); break;
+                  default: assert(0);
+               }
+               break;
+            case F_reverse:
+               sing(V1,"% pas-ses it to $... and he makes a nice re-verse lay up from un-der-neath.", assist, player);
+               break;
+            case F_dunk:
+               switch(random_nonrepeat(4))
+               {
+                  case 0: sing(V1, "% pas-ses it to $, ! he's wide o-pen, and jams it in.", assist, player); break;
+                  case 1:
+                  case 2:
+                  case 3:
+                     break;
+                  default: assert(0);
+               }
+               break;
+            case F_alleyoop:
+               switch(random_nonrepeat(2))
+               {
+               }
+               break;
+            case F_alleyoop_dunk:
+               sing(V1, "");
+               break;
+
+         }
          // @TODO: assisted layup
-         if (made)
-            sing(V1, "% shoots and makes it.", player);
-         else
-            sing(V1, "% shoots and misses.", player);
+         sing(V1, "% shoots and makes it.", player);
       } else {
-         if (made)
-            ++made_counts[flavor];
-         else
-            ++missed_counts[flavor];
-
-
          {
             int handled = 0;
             // some layup types need special handling
@@ -740,7 +792,9 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   sing(V1, "% shoots and misses.", player);
             } else {
                int any=0;
+
                run_play(player, tm == 1 ? -0.8f : 0.8f, this_event_time-3);
+
                // gets the pass outside and works it in
                if (random(100) < 20) {
                   any = 1;
@@ -757,7 +811,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   switch (random_nonrepeat(8)) {
                      case 0: sing(V1, "% pump fakes and slips by his de-fen-der... ", player); break;
                      case 1: sing(V1, "A nice dou-ble-move from $ to get by $... ", player, defender(player)); break;
-                     case 2: sing(V1, "$ gets a pick from $... ", player, team[tm][random_player(tm,player)]); break;
+                     case 2: sing(V1, "$ gets a pick from $... ", player, team_roster[tm][random_player(tm,player)]); break;
                      case 3: sing(V1, "Gets by his def-end-er... ", player, defender(player)); break;
                      case 4: sing(V1, "% drives to the bas-ket... ", player); break;
                      case 5: sing(V1, "Drives to the bas-ket... ", player); break;
@@ -818,13 +872,18 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                } else {
                   switch (flavor) {
                      case F_none:
-                        switch (random_nonrepeat(10)) {
-                           // @TODO
+                        if (blocker) {
+                           sing(V1, "goes for a lay up... ! blocked by $", blocker);
+                           // @TODO variations
+                        } else {
+                           switch (random_nonrepeat(10)) {
+                              // @TODO variations
+                           }
+                           sing(V1, "tries the lay up and mis-ses.", player);
                         }
-                        sing(V1, "$ tries the lay up and mis-ses.", player);
                         break;
                      case F_dunk:
-                        sing(V1, "! % goes for the dunk... and he mis-ses it.", player);
+                        sing(V1, "! goes for the dunk... and he mis-ses it.", player);
                         sing(V2, "That's got-ta be em-bar-rass-ing");
                         break;
 
@@ -871,26 +930,31 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
          switch (flavor) {
             case F_none: 
             case F_bank:
-               if (random_nonrepeat(100) < 55) {
-                  switch (random_nonrepeat(3)) {
-                     case 0: sing(V1, "Jump shot... "); break;
-                     case 1: sing(V1, "$ with a shot... ", player); break;
-                     case 2: sing(V1, "% takes a shot... ", player); break;
-                     default: assert(0);
-                  }
+               if (blocker) {
+                  // @TODO variations
+                  sing(V1, "% tries a shot, but it's blocked by $.", player, blocker);
                } else {
-                  switch(random_nonrepeat(9)) {
-                     // @TODO more
-                     case 0: sing(V1, "$ with the pick, $ shoots... ", random_player(tm,player), player); break;
-                     case 1: sing(V1, "Shoots off a screen from $... ", random_player(tm,player)); break;
-                     case 2: sing(V1, "Pump fakes and takes a shot... "); break;
-                     case 3: sing(V1, "$ with a wide open look... ", player); break;
-                     case 4: sing(V1, "% shoots from the key... ", player); break;
-                     case 5: sing(V1, "Shoots from down low... ", player); break;
-                     case 6: sing(V1, "Fakes and shoots... "); break;
-                     case 7: sing(V1, "With a jump shot from in close... "); break;
-                     case 8: sing(V1, "For two points... "); break;
-                     default: assert(0);
+                  if (random_nonrepeat(100) < 55) {
+                     switch (random_nonrepeat(3)) {
+                        case 0: sing(V1, "Jump shot... "); break;
+                        case 1: sing(V1, "$ with a shot... ", player); break;
+                        case 2: sing(V1, "% takes a shot... ", player); break;
+                        default: assert(0);
+                     }
+                  } else {
+                     switch(random_nonrepeat(9)) {
+                        // @TODO more
+                        case 0: sing(V1, "$ with the pick, $ shoots... ", random_player(tm,player), player); break;
+                        case 1: sing(V1, "Shoots off a screen from $... ", random_player(tm,player)); break;
+                        case 2: sing(V1, "Pump fakes and takes a shot... "); break;
+                        case 3: sing(V1, "$ with a wide open look... ", player); break;
+                        case 4: sing(V1, "% shoots from the key... ", player); break;
+                        case 5: sing(V1, "Shoots from down low... ", player); break;
+                        case 6: sing(V1, "Fakes and shoots... "); break;
+                        case 7: sing(V1, "With a jump shot from in close... "); break;
+                        case 8: sing(V1, "For two points... "); break;
+                        default: assert(0);
+                     }
                   }
                }
                break;
@@ -944,7 +1008,9 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                assert(0);           
          }
       }
-      if (made) {
+      if (blocker) {
+         ; // do nothing
+      } else if (made) {
          if (flavor == F_bank || flavor == F_running_bank) {
             switch (random_nonrepeat(3)) {
                case 0: sing(V1, "off the glass and in."); break;
@@ -1000,20 +1066,44 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                case 1: sing(V1, "not even close... "); break;
                case 2: sing(V1, "bounc-es off the rim... "); break;
                case 3: sing(V1, "bounc-es a-way off the rim... "); break;
-               // @TODO more
+               // @TODO more variations
                default: assert(0);
             }
          }
       }
    }
 
+   stats[blocker].blocks += 1;
+   stats[assist].assists += 1;
+
+   stats[player].attempts += 1;
+   stats[player].made     += made;
+
+   switch (type) {
+      case SHOT_layup:
+         stats[player].layup_attempts += 1;
+         stats[player].layup_made     += made;
+         stats[player].layup_points   += 2*made;
+         stats[player].points         += 2*made;
+         break;
+      case SHOT_3pt:
+         stats[player].f3_attempts    += 1;
+         stats[player].f3_made        += made;
+         stats[player].f3_points      += 3*made;
+         // fall through
+      case SHOT_jump:
+         stats[player].jump_attempts  += 1;
+         stats[player].jump_made      += made;
+         stats[player].jump_points    += (type == SHOT_3pt ? 3 : 2)*made;
+         stats[player].points         += (type == SHOT_3pt ? 3 : 2)*made;
+         break;
+   }
+
    game_state.current_time = this_event_time;
    game_state.possess_action_time = this_event_time;
    game_state.position = (player < 0 ? -1.0f : 1.0f);
-   if (made) {
-      game_state.possess_team = !tm;
-      game_state.possess_player = 0;
-   }
+   if (made)
+      set_tpossess(!tm, 0);
    last_shot_time = this_event_time;
    game_state.after_rebound = 0;
    assert(!made || blocker == 0);
@@ -1027,6 +1117,8 @@ void free_shot(int player, int shotnum, int total_shots, int made)
    who_was_fouled = 0;
    process_substitution();
 
+   set_tpossess(player < 0 ? TEAM_1 : TEAM_0, -1);
+
    // @TODO: reasonable text
    if (made)
       sing(V1, "$ makes a free throw.", player, shotnum, total_shots);
@@ -1035,16 +1127,18 @@ void free_shot(int player, int shotnum, int total_shots, int made)
 
    game_state.position = (player < 0 ? -1.0f : 1.0f);
    game_state.current_time = this_event_time;
-   //printf("Player %d took %d of %d free throws: %s\n", player, shotnum, total_shots, made ? "made" : "missed");
+
+   stats[player].ft_attempts += 1;
+   stats[player].ft_made     += made;
+   stats[player].ft_points   += made;
+   stats[player].points      += made;
 
    if (shotnum == total_shots) {
       if (made) {
-         game_state.possess_team = player < 0 ? TEAM_0 : TEAM_1;
-         game_state.possess_player = 0;
+         set_tpossess(player < 0 ? TEAM_0 : TEAM_1, 0);
       } else {
-         game_state.possess_team = -1;
-         game_state.possess_player = 0;
-         // should be an explicit rebound
+         force_announce_flag = 1;
+         // should be followed by an explicit rebound
       }
    }
    game_state.after_rebound = 0;
@@ -1057,7 +1151,8 @@ void offensive_foul(int player)
    // @TODO
    sing(V1, "$ makes an offensive foul.", player);
    foul_time = this_event_time;
-   tpossess(player < 0 ? TEAM_1 : TEAM_0);
+   tpossess(player < 0 ? TEAM_1 : TEAM_0, stb_rand() & 1);
+   stats[player].fouls += 1;
    game_state.current_time = this_event_time;
    game_state.after_rebound = 0;
 }
@@ -1072,7 +1167,11 @@ void rebound(int team, int player)
    else
       sing(V1, "# [takes|take] possession.", team);
    game_state.position = (game_state.possess_team == TEAM_0 ? 1.0f : -1.0f);
-   tpossess(team);
+   if (game_state.possess_team == (player < 0 ? TEAM_1 : TEAM_0))
+      stats[player].off_rebounds += 1;
+   else
+      stats[player].def_rebounds += 1;
+   tpossess(team, -1);
    game_state.current_time = this_event_time;
    game_state.possess_action_time = this_event_time;
    game_state.possess_player = player;
@@ -1092,7 +1191,9 @@ void turnover(int type, int team, int player, int stealer)
       sing(V1, "$ steals the ball from $.", stealer, player);
    else
       sing(V1, "$ loses the ball.", player);
-   tpossess(!team);
+   stats[player].turnovers += 1;
+   stats[stealer].steals += 1;
+   tpossess(!team, 1);
    game_state.current_time = this_event_time;
    game_state.possess_player = stealer;
    game_state.after_rebound = 0;
@@ -1150,7 +1251,7 @@ void announce_lineup(int full_name)
                default: assert(0);
             }
          }
-         sing(V1, buffer, team[j][k]);
+         sing(V1, buffer, team_roster[j][k]);
       }
    }
 
@@ -1201,44 +1302,64 @@ static void process_event(char *text)
       // regular shots
       if (3 == sscanf(text, "#%d 3pt Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_3pt, v[0], assist, 1, blocker, F_none);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Jump Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_none);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Turnaround Jump Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_turnaround);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Turnaround Hook Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_turnaround_hook);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Jump Bank Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_bank);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Jump Hook Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_hook);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Fade Away Jumper Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_fadeaway);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Reverse Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_reverse);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_none);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Tip Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_tip);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Dunk Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_dunk);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Running Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_running);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Running Bank shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_running_bank);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Putback Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_putback);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Putback Dunk Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_putback_dunk);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Driving Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_driving);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Driving Finger Roll Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_driving_finger_roll);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Alley Oop Layup Shot: made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_alleyoop);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Alley Oop Layup shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_alleyoop);
+         assert(stats[v[0]].points == v[1]);
       } else if (3 == sscanf(text, "#%d Alley Oop Dunk Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_alleyoop_dunk);
+         assert(stats[v[0]].points == v[1]);
 
       } else if (2 == sscanf(text, "#%d 3pt Shot: Missed %d", v+0, v+8)) {
          took_shot(SHOT_3pt, v[0], assist, 0, blocker, F_none);
@@ -1280,6 +1401,7 @@ static void process_event(char *text)
          free_shot(v[0], v[1], v[2], 0);
       } else if (5 == sscanf(text, "#%d Free Throw %d of %d (%d PTS) %d", v+0, v+1, v+2, v+3, v+8)) {
          free_shot(v[0], v[1], v[2], 1);
+         assert(stats[v[0]].points == v[3]);
 
       // foul
       } else if (3 == sscanf(text, "#%d Foul:Personal (%d PF) %d", v+0, v+1, v+8)) {
@@ -1301,24 +1423,36 @@ static void process_event(char *text)
          rebound(t, 0);
       } else if (4 == sscanf(text, "#%d Rebound (Off:%d Def:%d) %d", v+0,v+1,v+2, v+8)) {
          rebound(t, v[0]);
+         assert(stats[v[0]].off_rebounds == v[1]);
+         assert(stats[v[0]].def_rebounds == v[2]);
 
       // turnovers
       } else if (3 == sscanf(text, "#%d Turnover:Traveling (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_traveling, t, v[0], 0);
+         assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:Foul (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_foul     , t, v[0], 0);
+         assert(stats[v[0]].turnovers == v[1]);
       } else if (5 == sscanf(text, "#%d Turnover:Bad Pass (%d TO) Steal:#%d (%d ST) %d", v+0,v+1,v+2,v+3,v+8)) {
          turnover(TURNOVER_badpass  , t, v[0], v[2]);
+         assert(stats[v[0]].turnovers == v[1]);
+         assert(stats[v[2]].steals    == v[3]);
       } else if (3 == sscanf(text, "#%d Turnover:Bad Pass (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_badpass  , t, v[0], 0);
+         assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:Out of Bounds Lost Ball Turnover (%d TO) %d", v+0,v+1, v+8)) {
          turnover(TURNOVER_out_of_bounds, t, v[0], 0);
+         assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:Palming Turnover (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_palming, t, v[0], 0);
+         assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:3 Second Violation (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_3sec   , t, v[0], 0);
+         assert(stats[v[0]].turnovers == v[1]);
       } else if (5 == sscanf(text, "#%d Turnover:Lost Ball (%d TO) Steal:#%d (%d ST) %d", v+0,v+1,v+2,v+3,v+8)) {
          turnover(TURNOVER_stolen , t, v[0], v[2]);
+         assert(stats[v[0]].turnovers == v[1]);
+         assert(stats[v[2]].steals    == v[3]);
 
       // misc
       } else if (3 == sscanf(text, "#%d Substitution replaced by #%d %d", v+0, v+1, v+8)) {
@@ -1334,12 +1468,17 @@ static void process_event(char *text)
          v[8] = 737;
       }
       assert(v[8] == 737);
+
+      if (assist)
+         assert(stats[assist].assists == v[7]);  
+      if (blocker)
+         assert(stats[blocker].blocks == v[6]);
    } else {
       int v[5];
       process_substitution();
       if (0 == strcmp(text, "Start of 1st Quarter")) {
          sing(V1, "Wel-come to to-night's Bas-ket-ball Bas-ket-ball As-so-ci-a-tion game.");
-         sing(V1, "Featuring ## ver-sus ##.", 0, 1);
+         sing(V1, "Fea-tur-ing ## ver-sus ##.", 0, 1);
          set_lineup(TEAM_0,  1,  2,  3,  4,  5);
          set_lineup(TEAM_1, -1, -2, -3, -4, -5);
          announce_lineup(1);
@@ -1379,9 +1518,8 @@ static void process_event(char *text)
          // announce the lineup
          sing(V1, "It's $ ver-sus $ to start the game.", v[0], v[1]);
          sing(V1, "The tip off goes to #", TEAM_0); // hardcoded to this specific game instead of detecting from transcript
-         game_state.possess_team   = TEAM_0;
-         game_state.possess_player = 0;
-         game_state.position       = -0.5;
+         set_tpossess(TEAM_0, -1);
+         game_state.position = -0.5;
       } else {
          assert(0);
       }
@@ -1401,7 +1539,7 @@ int main(int argc, char **argv)
    stb_srand(time(NULL));
    create_teams();
 
-   game_state.possess_team = -1;
+   set_tpossess(-1, 0);
    game_state.current_time = 0;
    for (i=0; i < n; ++i) {
       cur_line = i+1;

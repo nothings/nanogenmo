@@ -34,11 +34,11 @@
 20071102NYKCLE	34	00:44:14	[CLE] Ilgauskas Rebound (Off:0 Def:2)
 20071102NYKCLE	35	00:44:03	[CLE 14-10] James Fade Away Jumper Shot: Made (4 PTS)
 20071102NYKCLE	36	00:43:38	[NYK] Randolph Jump Hook Shot: Missed
-20071102NYKCLE	37	00:43:33	[NYK 12-14] Randolph Layup Shot: Made (4 PTS)
 20071102NYKCLE	38	00:43:33	[NYK] Randolph Rebound (Off:1 Def:0)
+20071102NYKCLE	37	00:43:33	[NYK 12-14] Randolph Layup Shot: Made (4 PTS)
 20071102NYKCLE	39	00:43:16	[CLE] Gooden Jump Hook Shot: Missed
-20071102NYKCLE	40	00:43:14	[CLE 16-12] Gooden Tip Shot: Made (2 PTS)
 20071102NYKCLE	41	00:43:14	[CLE] Gooden Rebound (Off:1 Def:1)
+20071102NYKCLE	40	00:43:14	[CLE 16-12] Gooden Tip Shot: Made (2 PTS)
 20071102NYKCLE	42	00:43:01	[NYK 14-16] Randolph Jump Shot: Made (6 PTS) Assist: Marbury (2 AST)
 20071102NYKCLE	43	00:42:46	[CLE 19-14] Gibson 3pt Shot: Made (11 PTS) Assist: Ilgauskas (1 AST)
 20071102NYKCLE	44	00:42:32	[NYK] Randolph Turnover:Bad Pass (1 TO) Steal:Gooden (1 ST)
@@ -214,8 +214,8 @@
 20071102NYKCLE	214	00:24:16	[CLE] James Jump Bank Shot: Missed
 20071102NYKCLE	215	00:24:15	[NYK] Randolph Rebound (Off:2 Def:5)
 20071102NYKCLE	216	00:24:13	[NYK] Randolph Layup Shot: Missed
-20071102NYKCLE	217	00:24:13	[NYK 54-54] Curry Tip Shot: Made (14 PTS)
 20071102NYKCLE	218	00:24:13	[NYK] Curry Rebound (Off:1 Def:4)
+20071102NYKCLE	217	00:24:13	[NYK 54-54] Curry Tip Shot: Made (14 PTS)
 20071102NYKCLE	219	00:24:06	[CLE] Team Timeout:Short
 20071102NYKCLE	220	00:24:06	[CLE] D. Jones Substitution replaced by Gibson
 20071102NYKCLE	222	00:24:06	[CLE] D. Brown Substitution replaced by Hughes
@@ -480,7 +480,7 @@
 20071102NYKCLE	480	00:00:04	[NYK] Crawford Jump Shot: Missed
 20071102NYKCLE	481	00:00:04	[CLE] James Rebound (Off:3 Def:4)
 20071102NYKCLE	482	00:00:04	[NYK] Crawford Foul:Personal (2 PF)
-20071102NYKCLE	483	00:00:04	[CLE 109-104] James Free Throw 1 of 2 (45 PTS)
+20071102NYKCLE	483	00:00:04	[CLE 109-104] James Free Throw 1 of 2 (44 PTS)
 20071102NYKCLE	484	00:00:04	[CLE 110-104] James Free Throw 2 of 2 (45 PTS)
 20071102NYKCLE	485	00:00:00	[NYK 106-110] Robinson Layup Shot: Made (19 PTS)
 20071102NYKCLE	486	00:00:00	End of 4th Quarter
