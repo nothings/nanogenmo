@@ -1,6 +1,8 @@
 // TODO:
 //   Each chapter Hannah takes a break from working it
 //   Reference the passing of time?
+//   Emotional arc
+//   Hunger daemon
                                            
 #define STB_DEFINE
 #include "stb.h"
@@ -376,5 +378,6 @@ int main(int argc, char **argv)
    printsub("\n\n<p>\n\n");
    printsub("\n\n<h2>Chapter 1</h2>\n\n");
    hanoi();
+   printsub("\n\n<p><b>The End</b>\n");
    return 0;
 }
