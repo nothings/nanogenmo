@@ -776,10 +776,11 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                         switch (random_nonrepeat(6)) {
                            case 0: sing(V1, "lays it up for an eas-y two points."); break;
                            case 1: sing(V1, "lays it up and it goes right in."); break;
-                           case 2: sing(V1, "contested shot... the lay-up is good."); break;
+                           case 2: sing(V1, "con-tes-ted shot... the lay-up is good."); break;
                            case 3: sing(V1, "lays the ball up and it's good."); break;
                            case 4: sing(V1, "drops in an eas-y lay-up for two points."); break;
                            case 5: sing(V1, "is wide open as he lays it up for two."); break;
+                           default: assert(0);
                         }
                         break;
                      case F_putback:
@@ -787,13 +788,17 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                      case F_tip:
                         assert(0);
                      case F_dunk:
-                        switch (random_nonrepeat(2)) {
-                           // @TODO
+                        switch (random_nonrepeat(3)) {
+                           case 0: sing(V1, "!is wide open and he slams it in for two."); break;
+                           case 1: sing(V1, "!and slams it in to the bas-ket."); break;
+                           case 2: sing(V1, "!and dunks it for an easy two."); break;
                         }
                         break;
                      case F_driving:
                         switch (random_nonrepeat(2)) {
-                           // @TODO
+                           case 0: sing(V1, "drives in to the basket, lays it up, it's good."); break;
+                           case 1: sing(V1, "drives to the basket and lays it in."); break;
+                           default: assert(0);
                         }
                         break;
                      case F_driving_finger_roll:
@@ -814,10 +819,12 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   switch (flavor) {
                      case F_none:
                         switch (random_nonrepeat(10)) {
+                           // @TODO
                         }
+                        sing(V1, "$ tries the lay up and mis-ses.", player);
                         break;
                      case F_dunk:
-                        sing(V1, "! % goes for the dunk... and he misses it.", player);
+                        sing(V1, "! % goes for the dunk... and he mis-ses it.", player);
                         sing(V2, "That's got-ta be em-bar-rass-ing");
                         break;
 
@@ -1019,6 +1026,8 @@ void free_shot(int player, int shotnum, int total_shots, int made)
    process_foul(shotnum == 1);
    who_was_fouled = 0;
    process_substitution();
+
+   // @TODO: reasonable text
    if (made)
       sing(V1, "$ makes a free throw.", player, shotnum, total_shots);
    else
@@ -1045,6 +1054,7 @@ void offensive_foul(int player)
 {
    process_foul(0);
    process_substitution();
+   // @TODO
    sing(V1, "$ makes an offensive foul.", player);
    foul_time = this_event_time;
    tpossess(player < 0 ? TEAM_1 : TEAM_0);
@@ -1056,6 +1066,7 @@ void rebound(int team, int player)
 {
    process_foul(0);
    process_substitution();
+   // @TODO
    if (player)
       sing(V1, "$ with the rebound.", player);
    else
@@ -1076,6 +1087,7 @@ void turnover(int type, int team, int player, int stealer)
    process_foul(0);
    process_substitution();
    run_play(player, team < 0 ? -0.6f : 0.6f, this_event_time);
+   // @TODO
    if (stealer)
       sing(V1, "$ steals the ball from $.", stealer, player);
    else
