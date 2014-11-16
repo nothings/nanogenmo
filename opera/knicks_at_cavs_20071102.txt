@@ -390,10 +390,10 @@
 20071102NYKCLE	390	00:06:38	[NYK] Richardson Substitution replaced by Curry
 20071102NYKCLE	391	00:06:38	[CLE 89-86] James Free Throw 1 of 1 (36 PTS)
 20071102NYKCLE	392	00:06:27	[NYK] Crawford Layup Shot: Missed
+20071102NYKCLE	396	00:06:27	[NYK] Lee Rebound (Off:3 Def:5)
 20071102NYKCLE	393	00:06:27	[CLE] James Foul:Shooting (1 PF)
 20071102NYKCLE	394	00:06:27	[NYK] Lee Free Throw 1 of 2 missed
 20071102NYKCLE	395	00:06:27	[NYK] Team Rebound
-20071102NYKCLE	396	00:06:27	[NYK] Lee Rebound (Off:3 Def:5)
 20071102NYKCLE	397	00:06:27	[NYK 87-89] Lee Free Throw 2 of 2 (7 PTS)
 20071102NYKCLE	398	00:06:05	[CLE 92-87] Gibson 3pt Shot: Made (18 PTS) Assist: James (6 AST)
 20071102NYKCLE	399	00:05:49	[NYK 90-92] Marbury 3pt Shot: Made (10 PTS) Assist: Crawford (4 AST)
