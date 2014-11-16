@@ -292,6 +292,8 @@ void set_lineup(int t, int v1, int v2, int v3, int v4, int v5)
    team_roster[t][4] = v5;
 }
 
+static char *positions[5] = { "point guard", "shoot-ing guard", "small for-ward", "pow-er for-ward", "cen-ter" };
+
 int score[2];
 
 typedef struct
@@ -421,16 +423,9 @@ int random(int range)
 #define once()                  once(__LINE__)
 
 int this_event_time, last_event_time = 0;
-int last_sub_team;
+int last_sub_time;
 
 int subs[10][2], subcount;
-void enqueue_substitution(int p1, int p2)
-{
-   //printf("Sub %d with %d\n", p1, p2);
-   subs[subcount][0] = p1;
-   subs[subcount][1] = p2;
-   ++subcount;
-}
 
 void now(int voice)
 {
@@ -443,17 +438,23 @@ void now(int voice)
    }
 }
 
-// @TODO: process substitution queue intelligently
-void substitute(int tm, int prev_player, int new_player)
+void substitute(int prev_player, int new_player, int multi)
 {
+   int tm = prev_player < 0 ? TEAM_1 : TEAM_0;
    int voice = random(100)<93 ? V1 : V2;
+   int s;
 
-   if (last_sing == S_substitute) {
-      // multiple subs in a row
-      if (tm != last_sub_team)
-         sing(last_voice, "And for #, ", tm);
-      // @TODO: more cases
-      sing(last_voice, "$ is sub-sti-tut-ed by $.", new_player, prev_player);
+   assert(prev_player*new_player > 0);
+   s = slot(tm, prev_player);
+   team_roster[tm][s] = new_player;
+
+   if (multi) {
+      if (multi > 0) {
+         // @TODO: more cases
+         sing(last_voice, "$ is sub-sti-tut-ed by $", prev_player, new_player);
+         if (multi == 1)
+            sing(last_voice, ", ");
+      }
    } else {
       switch (random_nonrepeat(7)) {
          case 0:             sing(voice, "$ is sub-sti-tut-ed in for $."   ,     new_player , prev_player); break;
@@ -468,35 +469,109 @@ void substitute(int tm, int prev_player, int new_player)
             assert(0);
       }
    }
-   last_sing = S_substitute;
-   last_sub_team = tm;
+}
+
+int check_move(int i, int start, int end)
+{
+   int a;
+   int tm = subs[start][0] < 0 ? TEAM_1 : TEAM_0;
+   int other_old = -1, other_new = -1;
+   // check if there is an event where either player is subbed again
+   for (a=start; a < end; ++a) {
+      if (a != i) {
+         if (subs[a][0] == subs[i][1])
+            other_new = a;
+         if (subs[a][1] == subs[i][0])
+            other_old = a;
+      }
+   }
+
+   assert(other_old < 0 || other_new < 0);
+
+   if (other_old >= 0) {
+      char buffer[256];
+      static char *and_while[2] = { "and", "while" };
+      sprintf(buffer, "$ moves to %s, %s $ comes in as %s.",
+         positions[slot(tm,subs[other_old][0])],
+         and_while[stb_rand()&1],
+         positions[slot(tm,subs[i][0])]);
+      sing(V1, buffer, subs[i][1], subs[i][0]);
+      return 1;
+   }
+   if (other_new >= 0) {
+      return 1;
+   }
+   return 0;
 }
 
 void process_substitution(void)
 {
-   int j,i,k;
-   for (j=0; j < subcount; ++j) {
-      int p1 = subs[j][0];
-      int p2 = subs[j][1];
-      int t = p1 < 0 ? TEAM_1 : TEAM_0;
-      assert(p1*p2 > 0);
-      for (i=0; i < 5; ++i) {
-         if (team_roster[t][i] == p1) {
-            team_roster[t][i] = p2;
-            break;
+   int j,i,k,t;
+
+   if (subcount > 0 ) {
+      if (subcount > 1) {
+         int tm = subs[0][0] < 0 ? TEAM_1 : TEAM_0;
+         for (j=1; j < subcount; ++j)
+            if (tm != subs[j][0] < 0 ? TEAM_1 : TEAM_0)
+               break;
+         if (j < subcount) {
+            force_team_mode = stb_rand() & 1;
+            if (j == 1) {
+               // @TODO variations
+               sing(V1, "# is go-ing to sub out $ and re-place him with $.", tm, subs[0][0], subs[0][1]);
+               substitute(subs[0][0], subs[0][1], -1);
+            } else {
+               sing(V1, "Substitutions for #: ", tm);
+               for (i=0; i < j; ++i) {
+                  int suppress = check_move(i, 0,j);
+                  substitute(subs[i][0], subs[i][1], suppress ? -1 : i==j-1 ? 2 : 1);
+               }
+               sing(last_voice, ".");
+            }
+            sing(last_voice, "And for #, ", !tm); // @TODO variations
+            if ((subcount-j) == 1) {
+               sing(V1, "$ re-plac-es $.", tm, subs[0][1], subs[0][0]);
+               substitute(subs[j][0], subs[j][1], -1);
+            } else {
+               for (i=j; i < subcount; ++i) {
+                  int suppress = check_move(i, j,subcount);
+                  substitute(subs[i][0], subs[i][1], suppress ? -1 : i==subcount-1 ? 2 : 1);
+               }
+               sing(last_voice, ".");
+            }
+
+            force_team_mode = -1;
+         } else {
+            sing(V1, "Substitutions for #: ", tm);
+            for (i=0; i < subcount; ++i) {
+               int suppress = check_move(i, 0,subcount);
+               substitute(subs[i][0], subs[i][1], suppress ? -1 : i==subcount-1 ? 2 : 1);
+            }
+            sing(last_voice, ".");
          }
+      } else {
+         substitute(subs[0][0], subs[0][1], 0);
       }
-      assert(i != 5);
 
       // now veryify no repeats
-      for (i=0; i < 5; ++i)
-         for (k=0; k < 5; ++k)
-            if (i != k)
-               assert(team_roster[t][i] != team_roster[t][k]);
+      for (t=0; t < 2; ++t)
+         for (i=0; i < 5; ++i)
+            for (k=0; k < 5; ++k)
+               if (i != k)
+                  assert(team_roster[t][i] != team_roster[t][k]);
 
-      substitute(t, p1, p2);
    }
    subcount = 0;
+}
+
+void enqueue_substitution(int p1, int p2)
+{
+   if (last_sub_time != this_event_time && subcount)
+      process_substitution();
+   subs[subcount][0] = p1;
+   subs[subcount][1] = p2;
+   ++subcount;
+   last_sub_time = this_event_time;
 }
 
 int who_was_fouled;
@@ -1144,6 +1219,15 @@ void free_shot(int player, int shotnum, int total_shots, int made)
    game_state.after_rebound = 0;
 }
 
+void regular_foul(int type, int player)
+{
+   if (subcount && this_event_time > last_sub_time)
+      process_substitution();
+   foul = type;
+   foul_player = player;
+   foul_time = this_event_time;
+}
+
 void offensive_foul(int player)
 {
    process_foul(0);
@@ -1231,7 +1315,6 @@ void announce_lineup(int full_name)
          }
       }
       for (k=0; k < 5; ++k) {
-         static char *positions[5] = { "point guard", "shoot-ing guard", "small for-ward", "pow-er for-ward", "cen-ter" };
          char buffer[256];
          if (k == 4) {
             sing(V1, "And ");
@@ -1405,13 +1488,9 @@ static void process_event(char *text)
 
       // foul
       } else if (3 == sscanf(text, "#%d Foul:Personal (%d PF) %d", v+0, v+1, v+8)) {
-         foul = FOUL_personal;
-         foul_player = v[0];
-         foul_time = this_event_time;
+         regular_foul(FOUL_personal, v[0]);
       } else if (3 == sscanf(text, "#%d Foul:Shooting (%d PF) %d", v+0, v+1, v+8)) {
-         foul = FOUL_shooting;
-         foul_player = v[0];
-         foul_time = this_event_time;
+         regular_foul(FOUL_shooting, v[0]);
       } else if (3 == sscanf(text, "#%d Foul:Loose Ball (%d PF) %d", v+0, v+1, v+8)) {
          offensive_foul(v[0]); // @TODO
       } else if (3 == sscanf(text, "#%d Foul:Offensive (%d PF) %d", v+0, v+1, v+8)) {
