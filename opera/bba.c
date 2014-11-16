@@ -1130,7 +1130,7 @@ void announce_lineup(int full_name)
          }
       }
       for (k=0; k < 5; ++k) {
-         static char *positions[5] = { "point guard", "shooting guard", "small forward", "power forward", "center" };
+         static char *positions[5] = { "point guard", "shoot-ing guard", "small for-ward", "pow-er for-ward", "cen-ter" };
          char buffer[256];
          if (k == 4) {
             sing(V1, "And ");
