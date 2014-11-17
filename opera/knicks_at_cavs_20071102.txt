@@ -80,7 +80,7 @@
 20071102NYKCLE	80	00:37:44	[CLE] James Rebound (Off:0 Def:1)
 20071102NYKCLE	81	00:37:40	[NYK] Balkman Foul:Personal (1 PF)
 20071102NYKCLE	82	00:37:40	[CLE] Hughes Substitution replaced by D. Brown
-20071102NYKCLE	83	00:37:36	[NYK] Balkman Foul:Personal (2 PF)
+20071102NYKCLE	83	00:37:36	[NYK] Balkman Foul:Shooting (2 PF)
 20071102NYKCLE	84	00:37:36	[CLE 30-30] James Free Throw 1 of 2 (8 PTS)
 20071102NYKCLE	85	00:37:36	[CLE 31-30] James Free Throw 2 of 2 (9 PTS)
 20071102NYKCLE	86	00:37:14	[NYK] Robinson Jump Shot: Missed Block: James (1 BLK)
