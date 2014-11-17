@@ -231,7 +231,6 @@
 20071102NYKCLE	231	00:24:04	[NYK] Jones Substitution replaced by Curry
 20071102NYKCLE	232	00:24:04	[CLE 55-54] James Free Throw 2 of 2 (23 PTS)
 20071102NYKCLE	233	00:24:00	[NYK] Crawford 3pt Shot: Missed
-20071102NYKCLE	234	00:24:00	[NYK] Team Rebound
 20071102NYKCLE	235	00:24:00	End of 2nd Quarter
 20071102NYKCLE	236	00:23:46	[CLE] Ilgauskas Foul:Personal (2 PF)
 20071102NYKCLE	237	00:23:35	[NYK] Curry Jump Shot: Missed
@@ -333,7 +332,6 @@
 20071102NYKCLE	333	00:12:00	[NYK] Richardson Rebound (Off:1 Def:1)
 20071102NYKCLE	335	00:12:00	[NYK] Robinson Rebound (Off:2 Def:4)
 20071102NYKCLE	334	00:12:00	[NYK] Robinson Putback Layup Shot: Missed
-20071102NYKCLE	336	00:12:00	[NYK] Team Rebound
 20071102NYKCLE	337	00:12:00	End of 3rd Quarter
 20071102NYKCLE	338	00:11:37	[CLE 77-80] D. Jones Driving Layup Shot: Made (8 PTS)
 20071102NYKCLE	339	00:11:15	[NYK 82-77] Randolph Jump Shot: Made (18 PTS) Assist: Robinson (2 AST)
