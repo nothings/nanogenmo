@@ -126,7 +126,7 @@ char *lastname[30] =
    "Har-ri-son", "Starr", "Lake", "Pal-mer", "Sum-mers",
    "Maur", "Orr", "Ev-ans", "Cale", "Byrne",
    "Hath-er-ley", "Gil-mour", "Torn", "Lan-ois", "Ken-ne-dy",
-   "Cos-tel-lo", "Kai-ser", "Han-cock", "Jen-sen", "Gil-ber-to",
+   "Cos-tel-lo", "Kai-ser", "Han-son", "Jen-sen", "Gil-ber-to",
    "Walsh", "Zorn", "Mitch-ell", "Hat-field", "An-der-son",
    "Framp-ton", "Glass", "John-son", "Will-iams", "Lar-kin",
 };
@@ -719,8 +719,12 @@ void process_substitution(void)
          if (j < subcount) {
             force_team_mode = stb_rand() & 1;
             if (j == 1) {
-               // @TODO variations
-               sing(V1, "& [is|are] go-ing to sub out $ and re-place him with $.", tm, subs[0][0], subs[0][1]);
+               switch (random_nonrepeat(3)) {
+                  case 0: sing(V1, "& [is|are] go-ing to sub out $ and re-place him with $.", tm, subs[0][0], subs[0][1]); break;
+                  case 1: sing(V1, "For &, $ comes out, re-placed by $.", tm, subs[0][0], subs[0][1]); break;
+                  case 2: sing(V1, "Looking at &, $ is re-plac-ing $.", tm, subs[0][1], subs[0][0]); break;
+                  default: assert(0);
+               }
                substitute(subs[0][0], subs[0][1], -1);
             } else {
                sing(V1, "Sub-sti-tu-tions for &: ", tm);
@@ -730,9 +734,16 @@ void process_substitution(void)
                }
                sing(last_voice, ".");
             }
-            sing(last_voice, "And for &, ", !tm); // @TODO variations
+            if (random(100) < 70)
+               sing(last_voice, "And for &, ", !tm);
+            else
+               sing(last_voice, "For &, ", !tm);
             if ((subcount-j) == 1) {
-               sing(V1, "$ re-plac-es $.", tm, subs[0][1], subs[0][0]);
+               switch (random_nonrepeat(3)) {
+                  case 0: sing(V1, "$ re-plac-es $.", tm, subs[j][1], subs[j][0]); break;
+                  case 1: sing(V1, "$ re-placed by $.", tm, subs[j][0], subs[j][1]); break;
+                  case 2: sing(V1, "$ comes in for $.", tm, subs[j][1], subs[j][0]); break;
+               }
                substitute(subs[j][0], subs[j][1], -1);
             } else {
                for (i=j; i < subcount; ++i) {
@@ -937,13 +948,11 @@ float position_for_foul(void)
    return 0;
 }
 
+void fouled_shot(int player, int fouled_by);
 void process_foul(int first_free_throw)
 {
    if (!foul)
       return;
-
-   // @TODO variations, needs to clean up the 'take a shot' case below
-   //                   and other clean-up
 
    make_ball_alive(foul_player < 0 ? TEAM_0 : TEAM_1);
 
@@ -963,14 +972,15 @@ void process_foul(int first_free_throw)
    assert(who_was_fouled * foul_player < 0);
 
    if (first_free_throw && this_event_time != last_shot_time) {
-      sing(V1, "% tries to take a shot but is fouled by $.", who_was_fouled, foul_player);
+      fouled_shot(who_was_fouled, foul_player);
    } else {
       if (who_was_fouled == 0) {
          sing(V1, "$ fouled nobody.", foul_player);
          assert(0);
       }
-      sing(V1, "Looks like a foul on the play, against $.", foul_player);
    }
+   // @TODO variations
+   sing(V1, "Looks like a foul on the play, a-gainst $.", foul_player);
    game_state.ball_alive = 0;
 
    who_was_fouled = 0;
@@ -1003,13 +1013,104 @@ int missed_counts[20];
 
 void took_shot(int type, int player, int assist, int made, int blocker, int flavor);
 void free_shot(int player, int shotnum, int total_shots, int made);
-void offensive_foul(int player);
+void offensive_foul(int player, int loose);
 void rebound(int team, int player);
 void turnover(int type, int team, int player, int stealer);
 void announce_lineup(int full_name);
 void do_timeout(int official);
 
 int last_shot_points;
+
+void fouled_shot(int player, int fouled_by)
+{
+   int tm = player < 0 ? TEAM_1 : TEAM_0;
+   if (random(100) < 50) {
+      // gets the pass outside and works it in
+      if (random(100) < 50) {
+         if (random(100) < 20) {
+            switch (random_nonrepeat(3)) {
+               case 0: sing(V1, "Look-ing for some-one to pass to."); break;
+               case 1: if (once()) sing(V2, "The de-fense is doing a great job."); break;
+               case 2: sing(V1, "$ can't find an-y-one.", player); break;
+               default: assert(0);
+            }
+         }
+         // randomly drive to the layup
+         switch (random_nonrepeat(8)) {
+            case 0: sing(V1, "% pump fakes and slips by his de-fen-der_ ", player); break;
+            case 1: sing(V1, "A nice dou-ble-move from $ to get by $_ ", player, defender(player)); break;
+            case 2: sing(V1, "$ gets a pick from $_ ", player, team_roster[tm][random_player(tm,player)]); break;
+            case 3: sing(V1, "Gets by his def-end-er_ ", player, defender(player)); break;
+            case 4: sing(V1, "% drives to the bas-ket_ ", player); break;
+            case 5: sing(V1, "Drives to the bas-ket_ ", player); break;
+            case 6: sing(V1, "% gets to the bas-ket_ ", player); break;
+            case 7: sing(V1, "% works his way to the bas-ket_ ", player); break;
+            default: assert(0);
+         }
+      } else {
+         sing(V1, "%", player);
+      }
+      switch (random_nonrepeat(9)) {
+         case 0: sing(V1, "tries the lay up and con-tact on the shot."); break;
+         case 1: sing(V1, "goes for a lay up, but it does-n't go in, but $ was all o-ver him.", fouled_by); break;
+         case 2: sing(V1, "lays it up, but can't get in."); break;
+         case 3: sing(V1, "tries a lay up through a crowd of de-fen-ders, but mis-ses."); break;
+         case 4: sing(V1, "looks for a lay up, but fouled on the play."); break;
+         case 5: sing(V1, "tries the lay up but he's knocked o-ver."); break;
+         case 6: sing(V1, "lays the ball up, but not even close."); break;
+         case 7: sing(V1, "puts it up_ no good, but con-tact on the play."); break;
+         case 8: sing(V1, "puts the ball up, but misses it."); break;
+         default: assert(0);
+      }
+   } else {
+      // @TODO: add description of contact
+      if (random_nonrepeat(100) < 55) {
+         switch (random_nonrepeat(3)) {
+            case 0: sing(V1, "Jump shot_ "); break;
+            case 1: sing(V1, "$ with a shot_ ", player); break;
+            case 2: sing(V1, "% takes a shot_ ", player); break;
+            default: assert(0);
+         }
+      } else {
+         switch(random_nonrepeat(9)) {
+            case 0: sing(V1, "$ with the pick, $ shoots_ ", random_player(tm,player), player); break;
+            case 1: sing(V1, "Shoots off a screen from $_ ", random_player(tm,player)); break;
+            case 2: sing(V1, "Pump fakes and takes a shot_ ");  break;
+            case 3: sing(V1, "$ with a wide open look_ ", player); break;
+            case 4: sing(V1, "% shoots from the key_ ", player); break;
+            case 5: sing(V1, "Shoots from down low_ ", player); break;
+            case 6: sing(V1, "Fakes and shoots_ "); break;
+            case 7: sing(V1, "With a jump shot from in close_ ");  break;
+            case 8: sing(V1, "For two points_ "); break;
+            default: assert(0);
+         }
+      }
+
+      if (random(100) < 70) {
+         switch (random_nonrepeat(5)) {
+            case 0: sing(V1, "miss-es.");  break;
+            case 1: sing(V1, "the shot miss-es.");
+            case 2: sing(V1, "it's no good."); break;
+            case 3: sing(V1, "the shot is no good."); break;
+            case 4: sing(V1, "it miss-es."); break;
+            default: assert(0);
+         }
+      } else {
+         switch (random_nonrepeat(6)) {
+            case 0: sing(V1, "it hits the rim_ no good."); break;
+            case 1: sing(V1, "not even close to going in."); break;
+            case 2: sing(V1, "bounc-es off the rim."); break;
+            case 3: sing(V1, "bounc-es a-way off the rim."); break;
+            case 4: sing(V1, "hits the front of the rim and bounces away."); break;
+            case 5: sing(V1, "bounces high and doesn't drop.");
+                    break;
+          
+            default: assert(0);
+         }
+      }
+
+   }
+}
 
 void took_shot(int type, int player, int assist, int made, int blocker, int flavor)
 {
@@ -1052,13 +1153,10 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
             case F_dunk:
                switch(random_nonrepeat(4))
                {
-                  // @TODO variations
-                  case 0:
-                  case 1:
-                  case 2:
-                  case 3:
-                     sing(V1, "% pas-ses it to $, ! he's wide o-pen, and jams it in.", assist, player); break;
-                     break;
+                  case 0: sing(V1, "% with the pass in-side to $, ! he smash-es it in.", assist, player); break;
+                  case 1: sing(V1, "% gives it to $, open lane, ! he dunks it one hand-ed.", assist, player); break;
+                  case 2: sing(V1, "% makes a pass to $, he james it for an easy two.", assist, player); break;
+                  case 3: sing(V1, "% pas-ses it to $, ! he's wide o-pen, and jams it in.", assist, player); break;
                   default: assert(0);
                }
                break;
@@ -1129,17 +1227,45 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
 
             if (handled)
                ; // handled above
-            else if (random(100) < 50) {
+            else if (random(100) < 40) {
                run_play(player, tm == 1 ? -1.0f : 1.0f, this_event_time-3);
                // run_play will print that it was an inside post
 
                // gets the pass in the post
 
-               // @TODO variation
-               if (made)
-                  sing(V1, "% shoots and makes it.", player);
-               else
-                  sing(V1, "% shoots and misses.", player);
+               switch (random_nonrepeat(5)) {
+                  case 0: sing(V1, "% push-es in and ", player); break;
+                  case 1: sing(V1, "% works it in_ ", player); break;
+                  case 2: sing(V1, "From the post, % push-es in_", player); break;
+                  case 3: sing(V1, "% goes under the bas-ket, ", player); break;
+                  case 4: sing(V1, "% works back, turns, ", player); break;
+                  default: assert(0);
+               }
+
+               if (made) {
+                  switch (random_nonrepeat(6)) {
+                     case 0: sing(V1, "lays it up for an eas-y two points."); break;
+                     case 1: sing(V1, "lays it up and it goes right in."); break;
+                     case 2: sing(V1, "con-tes-ted shot_ the lay-up is good."); break;
+                     case 3: sing(V1, "lays the ball up and it's good."); break;
+                     case 4: sing(V1, "drops in an eas-y lay-up for two points."); break;
+                     case 5: sing(V1, "he's wide open as he lays it up for two."); break;
+                     default: assert(0);
+                  }
+               } else {
+                  switch (random_nonrepeat(9)) {
+                     case 0: sing(V1, "tries the lay up and mis-ses."); break;
+                     case 1: sing(V1, "goes for a lay up, but it does-n't go in."); break;
+                     case 2: sing(V1, "lays it up, but it does-n't drop."); break;
+                     case 3: sing(V1, "tries a lay up, but it mis-ses."); break;
+                     case 4: sing(V1, "looks for a lay up, but no luck."); break;
+                     case 5: sing(V1, "tries the lay up but can't get it to go in."); break;
+                     case 6: sing(V1, "lays the ball up, but it's no good."); break;
+                     case 7: sing(V1, "puts it up_ no good."); break;
+                     case 8: sing(V1, "puts the ball up, but misses it."); break;
+                     default: assert(0);
+                  }
+               }
             } else {
                int any=0;
 
@@ -1440,7 +1566,11 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                           sing(V1, "the shot miss-es.");
                        break;
                case 2: sing(V1, "it's no good."); break;
-               case 3: sing(V1, "the shot is no good."); break;
+               case 3: if (said_shot)
+                           sing(V1, "it's no good");
+                       else
+                           sing(V1, "the shot is no good.");
+                       break;
                case 4: sing(V1, "it miss-es."); break;
                default: assert(0);
             }
@@ -1559,7 +1689,7 @@ void free_shot(int player, int shotnum, int total_shots, int made)
             sing(V1, "%'s looking to add a fourth point_ ", player);
          else {
             assert(last_shot_points == 2);
-            sing(V1, "%'s looking to turn it into three_ ", player); // @TODO variations
+            sing(V1, "%'s looking to turn it into three_ ", player);
          }
          if (made)
             sing(V1, "and makes it.");
@@ -1624,12 +1754,29 @@ void regular_foul(int type, int player)
    game_state.ball_alive = 0;
 }
 
-void offensive_foul(int player)
+int off_count;
+void offensive_foul(int player, int loose)
 {
    process_foul(0);
    process_substitution();
-   // @TODO
-   sing(V1, "$ makes an offensive foul.", player);
+
+   if (loose) {
+      sing(V1, "There's a foul, plen-ty of con-tact. It's $. $ gets a loose ball foul.", player, player);
+   } else {
+      switch (off_count) {
+         case 0:
+            run_play(player, 0.6f, this_event_time);
+            sing(V1, "There's a whis-tle on the play. Looks like charging by $.", player);
+            break;
+         case 1:
+            sing(V1, "There's a foul, looks like $ with an illegal screen.", player);
+            break;
+         case 2:
+            assert(0); // you'll need to add more random variation instead of hard-coding to this game
+      }
+      ++off_count;
+   }
+   
    foul_time = this_event_time;
    tpossess(player < 0 ? TEAM_1 : TEAM_0, stb_rand() & 1);
    stats[player].fouls += 1;
@@ -1640,12 +1787,13 @@ void offensive_foul(int player)
 
 void rebound(int team, int player)
 {
+   int announce = -1;
    if (suppress_rebound) {
       return;
    }
    process_foul(0);
    process_substitution();
-   // @TODO variations
+
    assert(game_state.ball_alive);
    if (player) {
       if (team == game_state.possess_team)
@@ -1664,7 +1812,7 @@ void rebound(int team, int player)
                case 3: sing(V1, "Off-en-sive re-bound from $.", player); break;
                default :assert(0);
             }
-      else
+      else {
          if (random(100) < 40)
             sing(V1, "$ with the rebound.", player);
          else
@@ -1676,6 +1824,8 @@ void rebound(int team, int player)
                case 4: sing(V1, "$ pulls down the ball.", player); break;
                default: assert(0);
             }
+         announce = 1;
+      }
    } else if (game_state.possess_team == team) {
       if (random(100) < 60)
          sing(V1, "& get[s|] the ball back.", team);
@@ -1697,7 +1847,7 @@ void rebound(int team, int player)
       stats[player].off_rebounds += 1;
    else
       stats[player].def_rebounds += 1;
-   tpossess(team, -1);
+   tpossess(team, announce);
    game_state.current_time = this_event_time;
    game_state.possess_action_time = this_event_time;
    game_state.possess_player = player;
@@ -1944,9 +2094,9 @@ static void process_event(char *text)
       } else if (3 == sscanf(text, "#%d Foul:Shooting (%d PF) %d", v+0, v+1, v+8)) {
          regular_foul(FOUL_shooting, v[0]);
       } else if (3 == sscanf(text, "#%d Foul:Loose Ball (%d PF) %d", v+0, v+1, v+8)) {
-         offensive_foul(v[0]); // @TODO
+         offensive_foul(v[0], 1);
       } else if (3 == sscanf(text, "#%d Foul:Offensive (%d PF) %d", v+0, v+1, v+8)) {
-         offensive_foul(v[0]);
+         offensive_foul(v[0], 0);
       } else if (2 == sscanf(text, "#%d Violation:Defensive Goaltending  %d", v+0,v+8)) {
 
       // rebounds
