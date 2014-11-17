@@ -37,8 +37,8 @@
 20071102NYKCLE	38	00:43:33	[NYK] Randolph Rebound (Off:1 Def:0)
 20071102NYKCLE	37	00:43:33	[NYK 12-14] Randolph Layup Shot: Made (4 PTS)
 20071102NYKCLE	39	00:43:16	[CLE] Gooden Jump Hook Shot: Missed
-20071102NYKCLE	41	00:43:14	[CLE] Gooden Rebound (Off:1 Def:1)
 20071102NYKCLE	40	00:43:14	[CLE 16-12] Gooden Tip Shot: Made (2 PTS)
+20071102NYKCLE	41	00:43:14	[CLE] Gooden Rebound (Off:1 Def:1)
 20071102NYKCLE	42	00:43:01	[NYK 14-16] Randolph Jump Shot: Made (6 PTS) Assist: Marbury (2 AST)
 20071102NYKCLE	43	00:42:46	[CLE 19-14] Gibson 3pt Shot: Made (11 PTS) Assist: Ilgauskas (1 AST)
 20071102NYKCLE	44	00:42:32	[NYK] Randolph Turnover:Bad Pass (1 TO) Steal:Gooden (1 ST)
@@ -214,8 +214,8 @@
 20071102NYKCLE	214	00:24:16	[CLE] James Jump Bank Shot: Missed
 20071102NYKCLE	215	00:24:15	[NYK] Randolph Rebound (Off:2 Def:5)
 20071102NYKCLE	216	00:24:13	[NYK] Randolph Layup Shot: Missed
-20071102NYKCLE	218	00:24:13	[NYK] Curry Rebound (Off:1 Def:4)
 20071102NYKCLE	217	00:24:13	[NYK 54-54] Curry Tip Shot: Made (14 PTS)
+20071102NYKCLE	218	00:24:13	[NYK] Curry Rebound (Off:1 Def:4)
 20071102NYKCLE	219	00:24:06	[CLE] Team Timeout:Short
 20071102NYKCLE	220	00:24:06	[CLE] D. Jones Substitution replaced by Gibson
 20071102NYKCLE	222	00:24:06	[CLE] D. Brown Substitution replaced by Hughes

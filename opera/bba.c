@@ -909,7 +909,7 @@ void run_play(int ball_holder, float position, int end_of_play_time)
 {
    int tm = game_state.possess_team;
    // run a play so the ball ends up in ball_holder's hands at position,
-   // @TODO actual plays
+   // @TODO actual plays  low-priority
    int delta_time = end_of_play_time - game_state.current_time;
    assert(game_state.ball_alive);
    if (delta_time < 5 + random(3)) {
@@ -927,7 +927,7 @@ void run_play(int ball_holder, float position, int end_of_play_time)
       while (delta_time >= 0) {
          pass_to(tm, team_roster[tm][random(5)], tm ? -0.75f : 0.75f, n);
          delta_time -= 2 + random(1) + random(3)*(random(3)==0);
-         delta_time -= 3+2*n; // @TODO tune
+         delta_time -= 3+2*n; // @TODO tune low-priority
          n += 1;
       }
       pass_to(tm, ball_holder, position, n);
@@ -1063,7 +1063,7 @@ void fouled_shot(int player, int fouled_by)
          default: assert(0);
       }
    } else {
-      // @TODO: add description of contact
+      // @TODO: add description of contact to synthetic missed jump shot
       if (random_nonrepeat(100) < 55) {
          switch (random_nonrepeat(3)) {
             case 0: sing(V1, "Jump shot_ "); break;
@@ -1112,6 +1112,7 @@ void fouled_shot(int player, int fouled_by)
    }
 }
 
+int suppress_rebound;
 void took_shot(int type, int player, int assist, int made, int blocker, int flavor)
 {
    int tm = (player < 0) ? TEAM_1 : TEAM_0;
@@ -1121,6 +1122,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
    slot(tm, player); // assert that the player is active on the team
                      
    make_ball_alive(tm);
+   suppress_rebound = 0; // don't let rebound-suppression drag
 
    if (this_event_time < game_state.possess_time+5 && game_state.possess_action_time == game_state.possess_time) {
       //printf("  Line: %d\n", cur_line);
@@ -1182,6 +1184,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                case F_tip:
                   handled = 1;
                   if (made) {
+                     suppress_rebound = -1;
                      switch (random_nonrepeat(2)) {
                         case 0: sing(V1, "$ tips it in, and it's good.", player); break;
                         case 1: sing(V1, "$ tips the ball, that's two points.", player); break;
@@ -1210,7 +1213,8 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                case F_putback_dunk:
                   handled = 1;
                   if (made) {
-                     sing(V1, "! $ with the putback jam.", player);
+                     suppress_rebound = -1;
+                     sing(V1, "! $ with the put-back jam.", player);
                      sing(V2, "That was done with au-thor-i-ty.");
                   } else {
                      assert(0);
@@ -1218,9 +1222,10 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   break;
             }
 
+            // @TODO: if tip-in / putback don't mention the rebound as play-by-play
+
             if (!handled) {
                if (player == game_state.after_rebound && game_state.position == (tm ? -1 : 1)) {
-                  // @TODO: offensive rebound but not tip in unless tip-in below
                   //printf("***       Offensive rebound shots        ***\n");
                }
             }
@@ -1349,6 +1354,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                         if (blocker) {
                            sing(V1, "goes for a lay up_ ! blocked by $.", blocker);
                            // @TODO variations
+                           // 7 instances
                         } else {
                            switch (random_nonrepeat(9)) {
                               case 0: sing(V1, "tries the lay up and mis-ses."); break;
@@ -1437,7 +1443,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                      }
                   } else {
                      switch(random_nonrepeat(9)) {
-                        // @TODO more
+                        // @TODO more    low-priority
                         case 0: sing(V1, "$ with the pick, $ shoots_ ", random_player(tm,player), player); break;
                         case 1: sing(V1, "Shoots off a screen from $_ ", random_player(tm,player)); break;
                         case 2: sing(V1, "Pump fakes and takes a shot_ "); said_shot = 1;  break;
@@ -1478,14 +1484,31 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                }
                break;
             case F_hook:
-               switch (random_nonrepeat(6)) {
-                  // @TODO more
+               switch (random_nonrepeat(12)) {
                   case 0: sing(V1, "% tries a hook_ ", player); break;
                   case 1: sing(V1, "Now a hook shot_ "); said_shot = 1; break;
                   case 2: sing(V1, "Now $ with a hook_ ", player); break;
                   case 3: sing(V1, "% goes for the hook_ ", player); break;
                   case 4: sing(V1, "Try-ing the hook_ "); break;
                   case 5: sing(V1, "The hook shot_ "); break;
+                  case 6: if (last_player == player)
+                             sing(V1, "A hook shot_ ");
+                          else
+                             sing(V1, "A hook shot from $_", player);
+                          break;
+                  case 7: if (last_player == player)
+                             sing(V1, "Puts up a hook_ ");
+                          else
+                             sing(V1, "$ puts up a hook_ ", player);
+                          break;
+                  case 8: sing(V1, "$ puts up a hook_ ", player); break;
+                  case 9: sing(V1, "$ with the hook_ ", player); break;
+                  case 10:sing(V1, "An un-ex-pect-ed hook from $_ ", player); break;
+                  case 11: if (last_player == player)
+                             sing(V1, "With a hook_ ");
+                          else
+                             sing(V1, "$, with a hook_ ", player);
+                          break;
                   default: assert(0);
                }
                break;
@@ -1524,8 +1547,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                default: assert(0);
             }
          } else {
-            switch (random_nonrepeat(9)) {
-               // @TODO more
+            switch (random_nonrepeat(12)) {
                case 0: sing(V1, "and it goes right in."); break;
                case 1: sing(V1, "it hits the rim and goes in."); break;
                case 2: sing(V1, "it rolls around the rim but goes in."); break;
@@ -1539,6 +1561,9 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                        break;
                case 7: sing(V1, "and puts it in the bas-ket."); break;
                case 8: sing(V1, "he nails it."); break;
+               case 9: sing(V1, "and it's right in the basket."); break;
+               case 10:sing(V1, "hits the far side of the rim and drops in."); break;
+               case 11:sing(V1, "hits the near side of the rim but goes in."); break;
                default: assert(0);
             }
          }
@@ -1666,7 +1691,6 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
    //printf("Player %d took '%c' assisted by %d: %s\n", player, "j3Lda"[type], assist, made ? "made" : "missed");
 }
 
-int suppress_rebound;
 int last_free_made;
 void free_shot(int player, int shotnum, int total_shots, int made)
 {
@@ -1788,7 +1812,15 @@ void offensive_foul(int player, int loose)
 void rebound(int team, int player)
 {
    int announce = -1;
-   if (suppress_rebound) {
+   if (suppress_rebound > 0)
+      return;
+
+   if (suppress_rebound < 0) {
+      suppress_rebound = 0;
+      if (!game_state.possess_team == (player < 0 ? TEAM_1 : TEAM_0))
+         stats[player].off_rebounds += 1;
+      else
+         stats[player].def_rebounds += 1;
       return;
    }
    process_foul(0);
@@ -1863,7 +1895,7 @@ void turnover(int type, int team, int player, int stealer)
    process_substitution();
    make_ball_alive(team);
    run_play(player, team < 0 ? -0.6f : 0.6f, this_event_time);
-   // @TODO
+   // @TODO variations
    if (stealer)
       sing(V1, "$ steals the ball from $.", stealer, player);
    else
