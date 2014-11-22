@@ -10,6 +10,8 @@
   short-indent = 1.5\cm  % space for shortInstrumentName
 }
 
+% \language "english"
+
 \include "music.ly"
 
 \score {

@@ -13,9 +13,6 @@
 //   V1 announces time left in quarter while player 'brings ball up court' if
 //      close to end of quarter
 
-//  bass: G2..E4 (F2..F4)
-//  soprano: D4..B5 (C4..C6)
-//  mezzo-soprano: B3..G5 (A3..A5)
 //
 //  have a whistle blow at each foul
 //  track shot clock and have shot clock buzzer?
@@ -95,6 +92,273 @@
   process_foul:
 
 */
+
+typedef struct
+{
+   int voice;
+   char **syllables;
+   char *cur_line;
+} vocal_line;
+
+vocal_line *vocals;
+
+stb_sdict *syllable_map;
+
+typedef struct
+{
+   int note;
+} pitch;
+
+static char *lilynote[12] =
+{
+   "c",
+   "cis",
+   "d",
+   "dis",
+   "e",
+   "f",
+
+   "fis",
+   "g",
+   "gis",
+   "a",
+   "ais",
+   "b",
+};
+
+FILE *f;
+
+#define SCALE_PITCHES   6
+
+typedef struct
+{
+   int pc[SCALE_PITCHES];
+} key;
+
+typedef struct
+{
+   int nodes[3];
+} chord;
+
+#define WHOLE_NOTE    96
+
+typedef struct
+{
+   int p;
+   int duration;
+} note;
+
+int random(int range)
+{
+   return stb_rand() % range;
+}
+
+int random_range(int low, int high)
+{
+   return random(high-low+1) + low;
+}
+
+note *generate_melody(chord *start_chord, chord *end_chord, int num_notes)
+{
+   int i;
+   int dir;
+   note *list=NULL;
+   int p = stb_rand() % (SCALE_PITCHES*2);
+   dir = (stb_rand() & 128) ? 1 : -1;
+   for (i=0; i < num_notes; ++i) {
+      note n;
+      int no_update=0;
+
+      if (random(100) < 5) {
+         // random momentary note out of range
+         int temp = p - dir*random_range(3,7);
+         if (temp < 0 || temp > SCALE_PITCHES*2) {
+            temp = p + (p-temp);
+            if (temp < 0 || temp > SCALE_PITCHES*2)
+               temp = p;
+         }
+         n.p = temp;
+         no_update = 1;
+      } else
+         n.p = p;
+
+      if (random(100) < 20)
+         dir = -dir;
+      else if (random(100) < 50)
+         p += dir;
+      else if (random(100) < 50)
+         p += dir*2;
+      else if (random(100) < 50)
+         p += dir*4;
+      else if (random(100) < 50)
+         p += dir*5;
+      else
+         p += dir*3;
+
+      if (p > SCALE_PITCHES*2 - random(4)) {
+         dir = -1;
+         p = SCALE_PITCHES*2 - random(5);
+      }
+      if (p < 0) {
+         dir = 1;
+         p = random(5);
+      }
+
+      if (random(100) < 80)
+         n.duration = WHOLE_NOTE / 8;
+      else
+         n.duration = WHOLE_NOTE / 4;
+      stb_arr_push(list, n);
+   }
+   return list;
+}
+
+void lily_print_note(int note, int duration)
+{
+   int octave = (note - 60 + 5*12) / 12;
+   int pc;
+   assert(note >= 12);
+   pc = note-60+5*12 - 12*octave;
+   assert(pc >= 0 && pc < 12);
+   fprintf(f, "%s", lilynote[pc]);
+   while (octave > 4) {
+      fprintf(f, "'");
+      --octave;
+   }
+   while (octave < 4) {
+      fprintf(f, ",");
+      ++octave;
+   }
+   switch (duration) {
+      case WHOLE_NOTE/4: fprintf(f, "4 "); break;
+      case WHOLE_NOTE/8: fprintf(f, "8 "); break;
+      default: assert(0);
+   }
+}
+
+void do_soprano_music(void)
+{
+   int scale[15] = {
+      0,2,4, 5,7,9,11,
+      12,14,16, 17,19,21,23,
+      24
+   };
+   int i,j;
+   for (i=8; i < stb_arr_len(vocals); ++i) {
+      char **syl = vocals[i].syllables;
+      note *nlist = generate_melody(NULL, NULL, stb_arr_len(syl));
+      for (j=0; j < stb_arr_len(nlist); ++j) {
+         int p = nlist[j].p;  
+         int o = p / SCALE_PITCHES;
+         int n = p % SCALE_PITCHES;
+         int pitch = 60 + scale[n] + 12*o;
+         lily_print_note(pitch, nlist[j].duration);
+         fprintf(f, "\n");
+      }
+
+      fprintf(f, "r8 r8 r8 r8\n");
+      if (i >= stb_arr_len(vocals)/24)
+         break;
+   }
+}
+
+// Lyr -- ics }\n");
+void do_soprano_lyrics(void)
+{
+   int i,j;
+   for (i=8; i < stb_arr_len(vocals); ++i) {
+      char **syl = vocals[i].syllables;
+      for (j=0; j < stb_arr_len(syl); ++j) {
+         char *s = strdup(syl[j]);
+         char *t = strchr(s, '-');
+         if (t) {
+            *t = 0;
+            fprintf(f, "%s -- ", s);
+         } else
+            fprintf(f, "%s ", s);
+         free(s);
+         fprintf(f, "\n");
+      }
+      if (i >= stb_arr_len(vocals)/24)
+         break;
+   }
+}
+
+
+//  bass: G2..E4 (F2..F4)
+//  soprano: D4..B5 (C4..C6)
+//  mezzo-soprano: B3..G5 (A3..A5)
+
+#if 1
+void write_music(void)
+{
+   syllable_map = stb_sdict_new(1);
+
+
+   f = fopen("music.ly", "w");
+   fprintf(f, "\\version \"2.18.2\"\n\n");
+   fprintf(f, "fluteMusic = \\relative c' {  }\n");
+   fprintf(f, "clarinetMusic = \\relative c'' {  }\n");
+   fprintf(f, "trumpetMusic = \\relative c { }\n");
+   fprintf(f, "hornMusic = \\relative c { }\n");
+   fprintf(f, "pianoRHMusic = \\relative c { }\n");
+   fprintf(f, "pianoLHMusic = \\relative c { \\clef bass }\n");
+   fprintf(f, "violinIMusic = \\relative c' { }\n");
+   fprintf(f, "violinIIMusic = \\relative c' { }\n");
+   fprintf(f, "violaMusic = \\relative c { \\clef alto }\n");
+   fprintf(f, "celloMusic = \\relative c { \\clef bass }\n");
+   fprintf(f, "bassMusic = \\relative c { \\clef \"bass_8\" }\n");
+   fprintf(f, "harpMusic = \\relative c'' { }\n");
+   fprintf(f, "\n");
+   fprintf(f, "sopranoMusic = {\n");
+   //\\relative c'' { g'4 a b c b1 }\n");
+   do_soprano_music();
+   fprintf(f, "\n}\n");
+   fprintf(f, "sopranoLyrics = \\lyricmode {\n");
+   do_soprano_lyrics();
+   fprintf(f, "\n}\n");
+   fprintf(f, "vbassMusic = \\relative c { c32 c } \n");
+   fprintf(f, "vbassLyrics =  \\lyricmode { Lyr -- ics }\n");
+   fprintf(f, "mezzoMusic = \\relative c'' { \\clef \"treble_8\" c32 c }\n");
+   fprintf(f, "mezzoLyrics =  \\lyricmode { Lyr -- ics }\n");
+   fclose(f);
+}
+#else
+void write_music(void)
+{
+   syllable_map = stb_sdict_new(1);
+
+
+   f = fopen("music.ly", "w");
+   fprintf(f, "\\version \"2.18.2\"\n\n");
+   fprintf(f, "fluteMusic = \\relative c' { g'1 b }\n");
+   fprintf(f, "clarinetMusic = \\relative c'' { bes1 d }\n");
+   fprintf(f, "trumpetMusic = \\relative c { g''1 b }\n");
+   fprintf(f, "hornMusic = \\relative c { d'1 fes }\n");
+   fprintf(f, "pianoRHMusic = \\relative c { g''1 b }\n");
+   fprintf(f, "pianoLHMusic = \\relative c { \\clef bass g1 b }\n");
+   fprintf(f, "violinIMusic = \\relative c' { g'1 b }\n");
+   fprintf(f, "violinIIMusic = \\relative c' { g'1 b }\n");
+   fprintf(f, "violaMusic = \\relative c { \\clef alto g'1 b }\n");
+   fprintf(f, "celloMusic = \\relative c { \\clef bass g1 b }\n");
+   fprintf(f, "bassMusic = \\relative c { \\clef \"bass_8\" g,1 b }\n");
+   fprintf(f, "harpMusic = \\relative c'' { e1 }\n");
+   fprintf(f, "\n");
+   fprintf(f, "sopranoMusic = {\n");
+   //\\relative c'' { g'4 a b c b1 }\n");
+   do_soprano_music();
+   fprintf(f, "\n}\n");
+   fprintf(f, "sopranoLyrics = \\lyricmode {\n");
+   do_soprano_lyrics();
+   fprintf(f, "\n}\n");
+   fprintf(f, "vbassMusic = \\relative c { g'1 a4 b c b }\n");
+   fprintf(f, "vbassLyrics =  \\lyricmode { Lyr -- ics }\n");
+   fprintf(f, "mezzoMusic = \\relative c'' { \\clef \"treble_8\" g1 b1 a4 b c b }\n");
+   fprintf(f, "mezzoLyrics =  \\lyricmode { Lyr -- ics }\n");
+   fclose(f);
+}
+#endif
+
 
 char *replace(char *buffer, char *src, char *repl)
 {
@@ -262,14 +526,6 @@ char *voicename[] =
 int last_player=0;
 int force_team_mode = -1;
 
-typedef struct
-{
-   int voice;
-   char **syllables;
-   char *cur_line;
-} vocal_line;
-
-vocal_line *vocals;
 vocal_line pending;
 
 static char **syllablize(char *line)
@@ -300,18 +556,24 @@ static void close_vocal_line(void)
 {
    int i;
    vocal_line add;
-   stb_arr_push(pending.cur_line, 0);
-   add.voice = pending.voice;
-   add.cur_line = strdup(pending.cur_line);
-   add.syllables = syllablize(add.cur_line);
-   printf("%s: ", voicename[pending.voice]);
-   for (i=0; i < stb_arr_len(add.syllables); ++i)
-      printf("%s ", add.syllables[i]);
-   printf("\n");
-   stb_arr_push(vocals, add);
-   stb_arr_free(pending.cur_line);
-   pending.cur_line = NULL;
-   pending.voice = -1;
+   if (pending.cur_line) {
+      if (stb_arr_len(pending.cur_line) == 1 && pending.cur_line[0] == '.') {
+         i=0;
+      } else {
+         stb_arr_push(pending.cur_line, 0);
+         add.voice = pending.voice;
+         add.cur_line = strdup(pending.cur_line);
+         add.syllables = syllablize(add.cur_line);
+         printf("%s: ", voicename[pending.voice]);
+         for (i=0; i < stb_arr_len(add.syllables); ++i)
+            printf("%s ", add.syllables[i]);
+         printf("\n");
+         stb_arr_push(vocals, add);
+      }
+      stb_arr_free(pending.cur_line);
+      pending.cur_line = NULL;
+      pending.voice = -1;
+   }
 }
 
 static void add_lyrics(int voice, char *text)
@@ -859,11 +1121,6 @@ int random_nonrepeat(int range, int line)
    return n;
 }
 
-int random(int range)
-{
-   return stb_rand() % range;
-}
-
 #define random_nonrepeat(range) random_nonrepeat(range, __LINE__)
 #define once()                  once(__LINE__)
 
@@ -1020,7 +1277,7 @@ int check_move(int i, int start, int end)
    if (other_old >= 0) {
       char buffer[256];
       static char *and_while[2] = { "and", "while" };
-      sprintf(buffer, "$ moves to %s, %s $ comes in as %s.",
+      sprintf(buffer, "$ moves to %s, %s $ comes in as %s,",
          positions[slot(tm,subs[other_old][0])],
          and_while[stb_rand()&1],
          positions[slot(tm,subs[i][0])]);
@@ -2476,7 +2733,7 @@ void rebound(int team, int player)
          list = color_add_analysis(list, SP_off_rebounds, player);
       else
          list = color_add_analysis(list, SP_def_rebounds, player);
-      color_add_analysis(list, SP_rebounds, player);
+      list = color_add_analysis(list, SP_rebounds, player);
       color_report_analysis(list);
    }
 
@@ -2925,6 +3182,7 @@ int main(int argc, char **argv)
    remove_player_names(pbp, n);
 
    stb_srand(time(NULL));
+   stb_srand(0);
    create_teams();
 
    set_tpossess(-1, 0);
@@ -2936,5 +3194,6 @@ int main(int argc, char **argv)
    if (pending.voice >= 0)
       close_vocal_line();
 
+   write_music();
    return 0;
 }
