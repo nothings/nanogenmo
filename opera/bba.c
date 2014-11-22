@@ -131,9 +131,19 @@ FILE *f;
 
 #define WHOLE_NOTE    96
 
-void lily_print_note(int note, int duration)
+void lily_print_duration(int duration)
 {
-   if (note >= 0) {
+   switch (duration) {
+      case WHOLE_NOTE/2: fprintf(f, "2 "); break;
+      case WHOLE_NOTE/4: fprintf(f, "4 "); break;
+      case WHOLE_NOTE/8: fprintf(f, "8 "); break;
+      default: assert(0);
+   }
+}
+
+void lily_print_note(int note)
+{
+   if (note > 0) {
       int octave = (note - 60 + 5*12) / 12;
       int pc;
       assert(note >= 12);
@@ -151,15 +161,12 @@ void lily_print_note(int note, int duration)
    } else {
       fprintf(f, "r");
    }
-   switch (duration) {
-      case WHOLE_NOTE/2: fprintf(f, "2 "); break;
-      case WHOLE_NOTE/4: fprintf(f, "4 "); break;
-      case WHOLE_NOTE/8: fprintf(f, "8 "); break;
-      default: assert(0);
-   }
 }
 
 
+
+#define OUTPUT_START   8
+#define OUTPUT_END     48
 
 
 
@@ -172,14 +179,22 @@ typedef struct
 
 typedef struct
 {
-   int nodes[3];
+   int notes[3];
 } chord;
+
+#define MAX_NOTES_PER_VOICE  4
 
 typedef struct
 {
    int p;
    int duration;
 } note;
+
+typedef struct
+{
+   int n[4];
+   int duration;
+} voicenote;
 
 int random(int range)
 {
@@ -203,6 +218,7 @@ note *generate_phrase(int num_notes)
    dir = (stb_rand() & 128) ? 1 : -1;
    high_cap = SCALE_PITCHES * 2 - random(3);
    low_cap  = random(3);
+
    for (i=0; i < num_notes; ++i) {
       note n;
       int no_update=0;
@@ -271,21 +287,63 @@ note *generate_phrase(int num_notes)
 }
 
 int scale[15] = {
+#if 1
    0,2,4, 5,7,9,11,
    12,14,16, 17,19,21,23,
    24
+#else
+   0,2,3, 6,7,9,11,
+   12,14,15, 18,19,21,23,
+   24
+#endif
 };
 
-note *adapt_melody(chord *start_chord, chord *end_chord, note *phrase, int range_low)
+int midi_note_for_scale(int p, int range_low)
+{
+   int o = p / SCALE_PITCHES;
+   int n = p % SCALE_PITCHES;
+   int pitch = range_low + scale[n] + 12*o;
+   return pitch;
+}
+
+int find_nearest_note_to_chord(int p, chord *chord)
+{
+   int i, best_dist = SCALE_PITCHES;
+   int result;
+   for (i=0; i < 3; ++i) {
+      int dist = p - chord->notes[i];
+      dist = dist % SCALE_PITCHES;
+      if (dist >  SCALE_PITCHES/2) dist -= SCALE_PITCHES;
+      if (dist < -SCALE_PITCHES/2) dist += SCALE_PITCHES;
+      assert(dist >= -SCALE_PITCHES/2-1 && dist <= SCALE_PITCHES/2+1);
+      if (p - dist < 0) dist += SCALE_PITCHES;
+      if (p + dist > 2*SCALE_PITCHES) dist -= SCALE_PITCHES;
+      if (abs(dist) < abs(best_dist))
+         best_dist = dist;
+   }
+   result = p - best_dist;
+
+   return result;
+}
+
+voicenote *adapt_melody(chord *start_chord, chord *end_chord, note *phrase, int range_low)
 {
    int i;
-   note *nlist = stb_arr_copy(phrase);
-   for (i=0; i < stb_arr_len(nlist); ++i) {
-      int p = nlist[i].p;  
-      int o = p / SCALE_PITCHES;
-      int n = p % SCALE_PITCHES;
-      int pitch = range_low + scale[n] + 12*o;
-      nlist[i].p = pitch;
+   voicenote *nlist=0;
+   for (i=0; i < stb_arr_len(phrase); ++i) {
+      voicenote v = { 0 };
+      int p = phrase[i].p;
+
+      if (i == 0) {
+         p = find_nearest_note_to_chord(p, start_chord);
+      } else if (i == stb_arr_len(phrase)-1) {
+         p = find_nearest_note_to_chord(p, end_chord);
+      }
+
+      v.n[0] = midi_note_for_scale(p, range_low);
+
+      v.duration = phrase[i].duration;
+      stb_arr_push(nlist, v);
    }
    return nlist;
 }
@@ -300,23 +358,55 @@ enum
    I__count
 };
 
-#define MAX_VOICES_PER_INSTRUMENT  8
+#define MAX_VOICES_PER_INSTRUMENT  2
 
 typedef struct
 {
-   note *voice[I__count][MAX_VOICES_PER_INSTRUMENT];
+   voicenote *voice[I__count][MAX_VOICES_PER_INSTRUMENT];
 } arranged_phrase;
 
+void random_chord(chord *a)
+{
+   a->notes[0] = random(SCALE_PITCHES);
+   a->notes[1] = a->notes[0] + 2;
+   a->notes[2] = a->notes[0] + 4;
+}
+
+voicenote *make_chord_voice(chord *start_chord, chord *end_chord, voicenote *phrase)
+{
+   int i,j;
+   voicenote *nlist=0;
+   for (i=0; i < stb_arr_len(phrase); ++i) {
+      voicenote n={0};
+
+      if (i == 0) {
+         static int num;
+         for (j=0; j < 3; ++j)
+            n.n[j] = midi_note_for_scale(start_chord->notes[j], 60-12);
+         //printf("%4d: %d %d %d\n", num, n.n[0], n.n[1], n.n[2]);
+         ++num;
+      }
+      else if (i == stb_arr_len(phrase)-2)
+         for (j=0; j < 3; ++j)
+            n.n[j] = midi_note_for_scale(end_chord->notes[j], 60-12);
+
+      n.duration = phrase[i].duration;
+      stb_arr_push(nlist, n);
+   }
+   return nlist;
+}
 
 arranged_phrase *arrange_phrase(chord *start_chord, chord *end_chord, note *phrase, int soloist)
 {
-   note n;
+   voicenote n = {0};
    arranged_phrase *p = malloc(sizeof(*p));
    memset(p,0,sizeof(*p));
    p->voice[soloist][0] = adapt_melody(start_chord, end_chord, phrase, 60);
-   n.p = -1;
    n.duration = WHOLE_NOTE/2;
-   stb_arr_push(p->voice[soloist][0], n);   
+   stb_arr_push(p->voice[soloist][0], n);
+
+   p->voice[I_piano][0] = make_chord_voice(start_chord, end_chord, p->voice[soloist][0]);
+   
    return p;
 }
 
@@ -328,19 +418,26 @@ void create_music(void)
    for (i=0; i < stb_arr_len(vocals); ++i) {
       char **syl = vocals[i].syllables;
       arranged_phrase *p;
+      chord a,b;
       note *nlist;
       nlist = generate_phrase(stb_arr_len(syl));
-      p = arrange_phrase(NULL, NULL, nlist, vocals[i].voice);
+      random_chord(&a);
+      random_chord(&b);
+      p = arrange_phrase(&a, &b, nlist, vocals[i].voice);
+      if (i == OUTPUT_START) {
+         p->voice[I_mezzo][0] = p->voice[I_soprano][0];
+         p->voice[I_bass ][0] = p->voice[I_soprano][0];
+      }
       stb_arr_push(song, p);
    }
 }
 
-void do_vocal_music(int inst)
+void do_instrument_music(int inst)
 {
    int i,j;
-   for (i=8; i < stb_arr_len(vocals); ++i) {
-      char **syl = vocals[i].syllables;
-      note *nlist = song[i]->voice[inst][0];
+   for (i=OUTPUT_START; i < OUTPUT_END && i < stb_arr_len(song); ++i) {
+      //char **syl = vocals[i].syllables;
+      voicenote *nlist = song[i]->voice[inst][0];
 
       if (nlist == NULL) {
          for (j=0; j < I__count; ++j) {
@@ -351,19 +448,31 @@ void do_vocal_music(int inst)
          }
          assert(nlist != NULL);
          for (j=0; j < stb_arr_len(nlist); ++j) {
-            lily_print_note(-1, nlist[j].duration);
+            lily_print_note(0);
+            lily_print_duration(nlist[j].duration);
             fprintf(f, "\n");
          }
 
       } else {
          for (j=0; j < stb_arr_len(nlist); ++j) {
-            lily_print_note(nlist[j].p, nlist[j].duration);
+            if (nlist[j].n[1]) {
+               int k;
+               fprintf(f, "<");
+               for (k=0; k < MAX_NOTES_PER_VOICE; ++k) {
+                  if (nlist[j].n[k] == 0)
+                     break;
+                  lily_print_note(nlist[j].n[k]);
+                  if (k+1 < MAX_NOTES_PER_VOICE && nlist[j].n[k+1])
+                     fprintf(f, " ");
+               }
+               fprintf(f, ">");
+            } else {
+               lily_print_note(nlist[j].n[0]);
+            }
+            lily_print_duration(nlist[j].duration);
             fprintf(f, "\n");
          }
       }
-
-      if (i >= stb_arr_len(vocals)/8)
-         break;
    }
 }
 
@@ -371,25 +480,25 @@ void do_vocal_music(int inst)
 void do_vocal_lyrics(int inst)
 {
    int i,j;
-   for (i=8; i < stb_arr_len(vocals); ++i) {
+   for (i=OUTPUT_START; i < OUTPUT_END && i < stb_arr_len(song); ++i) {
       if (vocals[i].voice == inst) {
          char **syl = vocals[i].syllables;
          for (j=0; j < stb_arr_len(syl); ++j) {
-            char *s = strdup(syl[j]);
-            char *t = strchr(s, '-');
+            char *raw_s = strdup(syl[j]), *s = raw_s;
+            char *t;
+            if (*s == '!') ++s;
+            t = strchr(s, '-');
             if (t) {
                *t = 0;
                fprintf(f, "%s -- ", s);
             } else
                fprintf(f, "%s ", s);
-            free(s);
+            free(raw_s);
             fprintf(f, "\n");
          }
       } else {
 
       }
-      if (i >= stb_arr_len(vocals)/8)
-         break;
    }
 }
 
@@ -407,24 +516,26 @@ void write_music(void)
 
    f = fopen("music.ly", "w");
    fprintf(f, "\\version \"2.18.2\"\n\n");
-   fprintf(f, "fluteMusic = \\relative c' {  }\n");
-   fprintf(f, "clarinetMusic = \\relative c'' {  }\n");
-   fprintf(f, "trumpetMusic = \\relative c { }\n");
-   fprintf(f, "hornMusic = \\relative c { }\n");
-   fprintf(f, "pianoRHMusic = \\relative c { }\n");
-   fprintf(f, "pianoLHMusic = \\relative c { \\clef bass }\n");
-   fprintf(f, "violinIMusic = \\relative c' { }\n");
-   fprintf(f, "violinIIMusic = \\relative c' { }\n");
-   fprintf(f, "violaMusic = \\relative c { \\clef alto }\n");
-   fprintf(f, "celloMusic = \\relative c { \\clef bass }\n");
-   fprintf(f, "bassMusic = \\relative c { \\clef \"bass_8\" }\n");
-   fprintf(f, "harpMusic = \\relative c'' { }\n");
+   fprintf(f, "fluteMusic = \\relative c' { r }\n");
+   fprintf(f, "clarinetMusic = \\relative c'' { r }\n");
+   fprintf(f, "trumpetMusic = \\relative c { r }\n");
+   fprintf(f, "hornMusic = \\relative c { r }\n");
+   fprintf(f, "pianoRHMusic = \\relative c { r }\n");
+   fprintf(f, "pianoLHMusic = { \\clef bass {\n");
+   do_instrument_music(I_piano);
+   fprintf(f, "  }\n}\n");
+   fprintf(f, "violinIMusic = \\relative c' { r }\n");
+   fprintf(f, "violinIIMusic = \\relative c' { r }\n");
+   fprintf(f, "violaMusic = \\relative c { \\clef alto r }\n");
+   fprintf(f, "celloMusic = \\relative c { \\clef bass r }\n");
+   fprintf(f, "bassMusic = \\relative c { \\clef \"bass_8\" r }\n");
+   fprintf(f, "harpMusic = \\relative c'' {r  }\n");
    fprintf(f, "\n");
-   fprintf(f, "sopranoMusic = {\n"); do_vocal_music(I_soprano); fprintf(f, "\n}\n");
+   fprintf(f, "sopranoMusic = {\n"); do_instrument_music(I_soprano); fprintf(f, "\n}\n");
    fprintf(f, "sopranoLyrics = \\lyricmode {\n"); do_vocal_lyrics(I_soprano); fprintf(f, "\n}\n");
-   fprintf(f, "mezzoMusic = {\n")  ; do_vocal_music(I_mezzo  ); fprintf(f, "\n}\n");
+   fprintf(f, "mezzoMusic = {\n")  ; do_instrument_music(I_mezzo  ); fprintf(f, "\n}\n");
    fprintf(f, "mezzoLyrics = \\lyricmode {\n")  ; do_vocal_lyrics(I_mezzo  ); fprintf(f, "\n}\n");
-   fprintf(f, "vbassMusic = {\n")  ; do_vocal_music(I_bass   ); fprintf(f, "\n}\n");
+   fprintf(f, "vbassMusic = {\n")  ; do_instrument_music(I_bass   ); fprintf(f, "\n}\n");
    fprintf(f, "vbassLyrics = \\lyricmode {\n")  ; do_vocal_lyrics(I_bass   ); fprintf(f, "\n}\n");
    fclose(f);
 }
@@ -2000,10 +2111,10 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
             case F_dunk:
                switch(random_nonrepeat(4))
                {
-                  case 0: sing(V1, "% with the pass in-side to $, ! he smash-es it in.", assist, player); break;
-                  case 1: sing(V1, "% gives it to $, open lane, ! he dunks it one hand-ed.", assist, player); break;
+                  case 0: sing(V1, "% with the pass in-side to $, !he smash-es it in.", assist, player); break;
+                  case 1: sing(V1, "% gives it to $, open lane, !he dunks it one hand-ed.", assist, player); break;
                   case 2: sing(V1, "% makes a pass to $, he james it for an easy two.", assist, player); break;
-                  case 3: sing(V1, "% pas-ses it to $, ! he's wide o-pen, and jams it in.", assist, player); break;
+                  case 3: sing(V1, "% pas-ses it to $, !he's wide o-pen, and jams it in.", assist, player); break;
                   default: assert(0);
                }
                break;
@@ -2015,7 +2126,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                }
                break;
             case F_alleyoop_dunk:
-               sing(V1, "% puts up an all-ey oop to $, ! and he jams it in.", assist, player);
+               sing(V1, "% puts up an all-ey oop to $, !and he jams it in.", assist, player);
                sing(V3, "!Wow.");
                sing(V2, "That was a beau-ti-ful play. $ was in a per-fect po-si-tion, and $ saw it plain as day.", player, assist);
                disable_color();
@@ -2060,7 +2171,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   handled = 1;
                   if (made) {
                      suppress_rebound = -1;
-                     sing(V1, "! $ with the put-back jam.", player);
+                     sing(V1, "!$ with the put-back jam.", player);
                      sing(V2, "That was done with au-thor-i-ty.");
                      disable_color();
                   } else {
@@ -2203,8 +2314,8 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                      case F_none:
                         if (blocker) {
                            switch (random_nonrepeat(4)) {
-                              case 0: sing(V1, "goes for a lay up_ ! blocked by $.", blocker); break;
-                              case 1: sing(V1, "! tries the lay up but he's blocked by $.", blocker); break;
+                              case 0: sing(V1, "goes for a lay up_ !blocked by $.", blocker); break;
+                              case 1: sing(V1, "!tries the lay up but he's blocked by $.", blocker); break;
                               case 2: sing(V1, "looks for a lay up, but $ with the block.", blocker); break;
                               case 3: sing(V1, "tries to put the ball up but it's blocked by $.", blocker); break;
                               default: assert(0);
@@ -2226,7 +2337,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                         }
                         break;
                      case F_dunk:
-                        sing(V1, "! goes for the dunk_ and he mis-ses it.", player);
+                        sing(V1, "!goes for the dunk_ and he mis-ses it.", player);
                         sing(V2, "That's got-ta be em-bar-rass-ing");
                         disable_color();
                         break;
@@ -2263,13 +2374,13 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
       if (type == SHOT_3pt) {
          enable_color();
          switch (random_nonrepeat(7)) {
-            case 0: sing(V1, "! For three_  "); break;
-            case 1: sing(V1, "! % shoots for three_  ", player); break;
-            case 2: sing(V1, "! Fakes his de-fen-der and goes for three_ "); break;
-            case 3: sing(V1, "! % tries for three_ ", player); break;
-            case 4: sing(V1, "! % look-ing for three_ ", player); break;
-            case 5: sing(V1, "! Try-ing for three points_ "); break;
-            case 6: sing(V1, "! Tries a three point shot_ "); said_shot=1; break;
+            case 0: sing(V1, "!For three_  "); break;
+            case 1: sing(V1, "!% shoots for three_  ", player); break;
+            case 2: sing(V1, "!Fakes his de-fen-der and goes for three_ "); break;
+            case 3: sing(V1, "!% tries for three_ ", player); break;
+            case 4: sing(V1, "!% look-ing for three_ ", player); break;
+            case 5: sing(V1, "!Try-ing for three points_ "); break;
+            case 6: sing(V1, "!Tries a three point shot_ "); said_shot=1; break;
             default: assert(0);
          }
       } else {
@@ -2279,14 +2390,14 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
             case F_bank:
                if (blocker) {
                   switch (random_nonrepeat(5)) {
-                     case 0: sing(V1, "% goes for a shot, ! but it's blocked by $.", player, blocker); break;
-                     case 1: sing(V1, "% goes up_ ! no, it's blocked. $ with the block.", player, blocker); break;
+                     case 0: sing(V1, "% goes for a shot, !but it's blocked by $.", player, blocker); break;
+                     case 1: sing(V1, "% goes up_ !no, it's blocked. $ with the block.", player, blocker); break;
                      case 2: sing(V1, "% fakes, shoots. $ blocks the shot.", player, blocker); break;
                      case 3: if (once())
                                 sing(V1, "Off a pick by $, ", random_player(tm,player));
-                             sing(V1, "$ takes a shot_ ! $ blocks it.", player, blocker);
+                             sing(V1, "$ takes a shot_ !$ blocks it.", player, blocker);
                              break;
-                     case 4: sing(V1, "% tries a shot, ! denied. Blocked by $.", player, blocker);
+                     case 4: sing(V1, "% tries a shot, !denied. Blocked by $.", player, blocker);
                         break;
                      default: assert(0);
                   }
