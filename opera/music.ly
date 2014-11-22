@@ -1,0 +1,19 @@
+fluteMusic = \relative c' { \key g \major g'1\pp b }
+clarinetMusic = \relative c'' { \key bes \major bes1\pp d }
+trumpetMusic = \relative c { \key g \major g''1\pp b }
+hornMusic = \relative c { d'1\pp fis }
+pianoRHMusic = \relative c { \key g \major g''1\pp b }
+pianoLHMusic = \relative c { \clef bass \key g \major g1\pp b }
+violinIMusic = \relative c' { \key g \major g'1\pp b }
+violinIIMusic = \relative c' { \key g \major g'1\pp b }
+violaMusic = \relative c { \clef alto \key g \major g'1\pp b }
+celloMusic = \relative c { \clef bass \key g \major g1\pp b }
+bassMusic = \relative c { \clef "bass_8" \key g \major g,1\pp b }
+harpMusic = \relative c { g''1 }
+
+sopranoMusic = \relative c'' { \key g \major g'4 a b c b1 }
+sopranoLyrics = \lyricmode { Lyr -- ics }
+vbassMusic = \relative c { \key g \major g'1 a4 b c b }
+vbassLyrics =  \sopranoLyrics
+mezzoMusic = \relative c'' { \clef "treble_8" \key g \major g1 b1 a4 b c b }
+mezzoLyrics = \sopranoLyrics

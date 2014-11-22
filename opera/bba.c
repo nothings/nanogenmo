@@ -1,6 +1,7 @@
 #define STB_DEFINE
 #include "stb.h" // http://github.com/nothings/stb
 
+#pragma warning(disable:4244)
 
 // TODO-ish:
 //   don't do two "with"s in a row for rebound & possession
@@ -8,11 +9,16 @@
 //   substitute "it" for "ball" in some cases
 //   if we tie up the score in the first free throw, should definitely mention
 //      the second free throw goes ahead
+//   it shouldn't be the point guards doing the tip-off!
+//   V1 announces time left in quarter while player 'brings ball up court' if
+//      close to end of quarter
 
 //  bass: G2..E4 (F2..F4)
 //  soprano: D4..B5 (C4..C6)
 //  mezzo-soprano: B3..G5 (A3..A5)
-
+//
+//  have a whistle blow at each foul
+//  track shot clock and have shot clock buzzer?
 
 
 //    Basketball Game: The Opera
@@ -490,6 +496,10 @@ void sing(int voice, char *fmt, ...)
       last_player = 0;
 }
 
+int this_event_time, last_event_time = 0;
+int last_sub_time;
+int color_ok_flag;
+
 int team_roster[2][5];
 
 int slot(int t, int player)
@@ -517,18 +527,233 @@ int score[2];
 
 typedef struct
 {
-   int points, assists, off_rebounds, def_rebounds, turnovers, steals, blocks, fouls;
-   int attempts, made;
-   int layup_attempts, layup_made, layup_points;
-   int jump_attempts, jump_made, jump_points;
-   int f3_attempts, f3_made, f3_points;
-   int ft_attempts, ft_made, ft_points;
+   int attempts;
+   int made;
+   int points;
+} stat_makeable;
+
+typedef struct
+{
+   stat_makeable game;
+   stat_makeable quarter[4];
+   stat_makeable half[2];
+
+   int streak_made;
+   int streak_length; // 0
+} stat_streakable;
+
+typedef struct
+{
+   int game;
+   int quarter[4];
+   int half[2];
+} stat_plain;
+
+enum
+{
+   SP_rebounds, SP_off_rebounds, SP_def_rebounds,
+   SP_assists,
+   SP_turnovers,
+   SP_steals,
+   SP_blocks,
+   SP_fouls,
+
+   SP__count,
+
+   SS_layup, SS_fg, SS_jump, SS_f3, SS_ft, SS_total,
+
+   SS__count,
+};
+
+
+// commentary perspective
+enum
+{
+   ASPECT_game,
+   ASPECT_half,
+   ASPECT_quarter,
+   ASPECT_streak,
+
+   ASPECT_season,
+   ASPECT_yesterday,
+
+   ASPECT__count,
+};
+
+typedef struct
+{
+   stat_plain plain[SP__count];
+   stat_streakable streakable[SS__count];
+
+   int did_comment_when[SS__count][ASPECT__count];
 } player_stats;
+
+enum
+{
+   SG_tonight,
+   SG_yesterday,
+   SG_season,
+
+   SG__count,
+};
 
 int cur_line;
 int last_shot_time;
-player_stats raw_stats[25];
-player_stats *stats = raw_stats+12;
+player_stats raw_stats[25][SG__count];
+player_stats (*stats)[SG__count] = raw_stats+12;
+int quarter; // [0..3]
+int half;    // [0..1]
+
+typedef struct
+{
+   int stat;
+   int player;
+   int aspect;
+   float priority;
+   float priority_interestingness; // 0..???, 0 is not interesting
+   float priority_recent;          // 0..???, 0 is just said it
+} color_statistic;
+
+int color_timestamp;
+
+static float compute_stat_interestingness(int stat, int player, int aspect)
+{
+   assert(aspect < ASPECT_season);
+   if (stat < SP__count) {
+      stat_plain *sp = &stats[player][0].plain[stat]; // @TODO aspect >= ASPECT_SEASON
+      switch (aspect) {
+         case ASPECT_game:
+            return 10;
+         case ASPECT_half:
+            if (half == 0) return 0;
+            if (sp->half[1] > sp->half[0]*2 && sp->half[0] >= 2)
+               return 3*(sp->half[1] - sp->half[0]);
+            if (this_event_time < 36*60) return 0;
+            return 2*(sp->half[1] - sp->half[0]);
+         case ASPECT_quarter:
+            if (quarter != 1) return 0;
+            if (sp->quarter[1] > sp->quarter[0]*2 && sp->quarter[0] >= 1)
+               return 4*(sp->quarter[1] - sp->quarter[0]);
+            if (this_event_time < 18*60) return 0;
+            return 3*(sp->quarter[1] - sp->quarter[0]);
+         case ASPECT_streak:
+            return 0;
+         default:
+            assert(0);
+      }
+   } else {
+      // @TODO
+      return 0;
+   }
+   return 0;
+}
+
+float square(float x)
+{
+   return atan(x/4);
+}
+
+static void compute_statistic_priority(color_statistic *cs)
+{
+   int time_since_last, prev_timestamp;
+   assert(cs->aspect < ASPECT_season);
+
+   prev_timestamp = stats[cs->player]->did_comment_when[cs->stat][cs->aspect];
+   time_since_last = color_timestamp - prev_timestamp;
+
+   if (time_since_last < 2)
+      cs->priority_recent = 0;
+   else
+      cs->priority_recent = square(time_since_last - 1); // @TODO run this through some function, like an expoential or square or something
+
+   if (cs->aspect >= ASPECT_season) {
+      if (prev_timestamp != 0)
+         cs->priority_recent = 0;
+   }
+
+   cs->priority_interestingness = compute_stat_interestingness(cs->stat, cs->player, cs->aspect);
+
+   cs->priority = cs->priority_interestingness * cs->priority_recent;
+}
+
+#define TEAM0_PLAYER     11
+#define TEAM1_PLAYER    -11
+
+int player_for_team[2] = { TEAM0_PLAYER, TEAM1_PLAYER };
+
+int team_for_player(int player)
+{
+   return player<0 ? TEAM_1 : TEAM_0;
+}
+
+static color_statistic *color_add_analysis(color_statistic *list, int stat, int player)
+{
+   int p[2] = { player, player_for_team[team_for_player(player)] };
+   int i,j;
+
+   for (i=0; i < 2; ++i) {
+      for (j=0; j < ASPECT_season; ++j) { // @TODO
+         color_statistic cs;
+         if (stat < SP__count && j == ASPECT_streak)
+            continue;
+         cs.player = p[i];
+         cs.stat = stat;
+         cs.aspect = j;
+         compute_statistic_priority(&cs);
+         if (cs.priority)
+            stb_arr_push(list, cs);
+      }
+   }
+   return list;
+}
+
+void update_plain_duration(stat_plain *sp, int count)
+{
+   sp->game += count;
+   sp->half[half] += count;
+   sp->quarter[quarter] += count;
+}
+
+
+void add_plain(int type, int player, int count)
+{
+   if (player) {
+      int team_stat = player_for_team[team_for_player(player)];
+      update_plain_duration(&stats[ player  ][SG_tonight].plain[type], count);
+      update_plain_duration(&stats[team_stat][SG_tonight].plain[type], count);
+   }
+}
+
+void update_stats_duration(stat_makeable *sm, int made, int points)
+{
+   sm->attempts += 1;
+   sm->made     += made;
+   sm->points   += points * made;
+}
+
+void update_streakable(int type, int player, int made, int points)
+{
+   stat_streakable *ss = &stats[player][SG_tonight].streakable[type];
+   update_stats_duration(&ss->game, made, points);
+   update_stats_duration(&ss->half[half], made, points);
+   update_stats_duration(&ss->quarter[quarter], made, points);
+
+   if (made != ss->streak_made) {
+      ss->streak_made = made;
+      ss->streak_length = 0;
+   }
+   ss->streak_length += 1;
+}
+
+void add_streakable(int type, int player, int made, int points)
+{
+   if (player) {
+      update_streakable(type, player, made, points);
+      update_streakable(type, player_for_team[team_for_player(player)], made, points);
+   }   
+}
+
+
 
 enum
 {
@@ -642,10 +867,6 @@ int random(int range)
 #define random_nonrepeat(range) random_nonrepeat(range, __LINE__)
 #define once()                  once(__LINE__)
 
-
-int this_event_time, last_event_time = 0;
-int last_sub_time;
-int color_ok_flag;
 
 void disable_color(void)
 {
@@ -951,6 +1172,26 @@ int is_closer_than(float pos)
    } else {
       return game_state.position < -pos;
    }
+}
+
+int compare_cs(const void *p, const void *q)
+{
+   color_statistic *a = (color_statistic *) p;
+   color_statistic *b = (color_statistic *) q;
+   return a->priority < b->priority ? -1 : a->priority > b->priority;
+}
+
+void color_report_analysis(color_statistic *list)
+{
+   int n;
+   qsort(list, stb_arr_len(list), sizeof(*list), compare_cs);
+   n = stb_arr_len(list)-1;
+   // @TODO generate actual reports
+   // @TODO do analysis for other events
+   if (n >= 0) {
+      n = n;
+   }
+   stb_arr_free(list);
 }
 
 int take_possession(int tm)
@@ -1878,29 +2119,24 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
       }
    }
 
-   stats[blocker].blocks += 1;
-   stats[assist].assists += 1;
-
-   stats[player].attempts += 1;
-   stats[player].made     += made;
+   add_plain(SP_blocks , blocker, 1);
+   add_plain(SP_assists, assist , 1);
 
    switch (type) {
       case SHOT_layup:
-         stats[player].layup_attempts += 1;
-         stats[player].layup_made     += made;
-         stats[player].layup_points   += 2*made;
-         stats[player].points         += 2*made;
+         add_streakable(SS_layup, player, made, 2);
+         add_streakable(SS_fg   , player, made, 2);
+         add_streakable(SS_total, player, made, 2);
          break;
       case SHOT_3pt:
-         stats[player].f3_attempts    += 1;
-         stats[player].f3_made        += made;
-         stats[player].f3_points      += 3*made;
-         // fall through
+         add_streakable(SS_f3   , player, made, 3);
+         add_streakable(SS_fg   , player, made, 3);
+         add_streakable(SS_total, player, made, 3);
+         break;
       case SHOT_jump:
-         stats[player].jump_attempts  += 1;
-         stats[player].jump_made      += made;
-         stats[player].jump_points    += (type == SHOT_3pt ? 3 : 2)*made;
-         stats[player].points         += (type == SHOT_3pt ? 3 : 2)*made;
+         add_streakable(SS_jump , player, made, 2);
+         add_streakable(SS_fg   , player, made, 2);
+         add_streakable(SS_total, player, made, 2);
          break;
    }
 
@@ -1913,6 +2149,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
 
    if (made) {
       if (can_do_color()) {
+         #if 0
          // @TODO: "he" should be player name if the score was announced
          if (stats[player].made == 1) {
             if (stats[player].attempts > 4)
@@ -1926,14 +2163,15 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                sing(V2, "That's the first shot he's made.");
          } else {
             if (type == SHOT_3pt && stats[player].f3_attempts > 1) {
-               sing(V2, "He's # for # to-night for three point-ers.", stats[player].f3_made, stats[player].f3_attempts);
+               sing(V2, "He's # for # so far to-night for three point-ers.", stats[player].f3_made, stats[player].f3_attempts);
             } else if (type == SHOT_jump && stats[player].jump_attempts > 2) {
-               sing(V2, "He's # for # to-night from the field.", stats[player].jump_made, stats[player].jump_attempts);
+               sing(V2, "He's # for # so far to-night from the field.", stats[player].jump_made, stats[player].jump_attempts);
             } else {
-               sing(V2, "He's # for # to-night.", stats[player].made, stats[player].attempts);
+               sing(V2, "He's # for # so far to-night.", stats[player].made, stats[player].attempts);
             }
          }
          disable_color();
+         #endif
       }
    }
 
@@ -2036,30 +2274,30 @@ void free_shot(int player, int shotnum, int total_shots, int made)
       if (last_free_made)
          if (made)
             switch (n) {
-               case 0: sing(V1, "And he makes the second as well."); break;
+               case 0: sing(V1, "And he makes the sec-ond as well."); break;
                case 1: sing(V1, "And that one goes in too."); break;
                case 2: sing(V1, "And that one is also good."); break;
                default: assert(0);
             }
          else
             switch (n) {
-               case 0: sing(V1, "But he can't sink the second."); break;
-               case 1: sing(V1, "But the second one doesn't drop."); break;
-               case 2: sing(V1, "But the second shot is no good."); break;
+               case 0: sing(V1, "But he can't sink the sec-ond."); break;
+               case 1: sing(V1, "But the sec-ond one does-n't drop."); break;
+               case 2: sing(V1, "But the sec-ond shot is no good."); break;
             }
       else
          if (made)
             switch (n) {
-               case 0: sing(V1, "But he makes the second."); break;
-               case 1: sing(V1, "But the second one goes in."); break;
-               case 2: sing(V1, "But the second one is good."); break;
+               case 0: sing(V1, "But he makes the sec-ond."); break;
+               case 1: sing(V1, "But the sec-ond one goes in."); break;
+               case 2: sing(V1, "But the sec-ond one is good."); break;
                default: assert(0);
             }
          else
             switch (n) {
-               case 0: sing(V1, "And he can't sink the second one either."); break;
-               case 1: sing(V1, "And the second one also doesn't drop."); break;
-               case 2: sing(V1, "And no good with the second shot."); break;
+               case 0: sing(V1, "And he can't sink the sec-ond one ei-ther."); break;
+               case 1: sing(V1, "And the sec-ond one also does-n't drop."); break;
+               case 2: sing(V1, "And no good with the sec-ond shot."); break;
             }
    }
 
@@ -2087,10 +2325,8 @@ void free_shot(int player, int shotnum, int total_shots, int made)
    game_state.position = (player < 0 ? -1.0f : 1.0f);
    game_state.current_time = this_event_time;
 
-   stats[player].ft_attempts += 1;
-   stats[player].ft_made     += made;
-   stats[player].ft_points   += made;
-   stats[player].points      += made;
+   add_streakable(SS_ft, player, made, 1);
+   add_streakable(SS_total, player, made, 1);
 
    if (shotnum == total_shots) {
       if (made) {
@@ -2147,7 +2383,7 @@ void offensive_foul(int player, int loose)
    
    foul_time = this_event_time;
    tpossess(player < 0 ? TEAM_1 : TEAM_0, stb_rand() & 1);
-   stats[player].fouls += 1;
+   add_plain(SP_fouls, player, 1);
    game_state.current_time = this_event_time;
    game_state.after_rebound = 0;
    game_state.ball_alive = 0;
@@ -2156,24 +2392,28 @@ void offensive_foul(int player, int loose)
 void rebound(int team, int player)
 {
    int announce = -1;
+   int offensive;
    if (suppress_rebound > 0)
       return;
 
    if (suppress_rebound < 0) {
       suppress_rebound = 0;
       if (!game_state.possess_team == (player < 0 ? TEAM_1 : TEAM_0))
-         stats[player].off_rebounds += 1;
+         add_plain(SP_off_rebounds, player, 1);
       else
-         stats[player].def_rebounds += 1;
+         add_plain(SP_def_rebounds, player, 1);
+      add_plain(SP_rebounds, player, 1);
       return;
    }
+
+   offensive = (game_state.possess_team == team);
    process_foul(0);
    process_substitution();
 
    assert(game_state.ball_alive);
    if (player) {
       enable_color();
-      if (team == game_state.possess_team)
+      if (offensive)
          if (player == game_state.possess_player && random(100) < 50)
             switch (random_nonrepeat(3)) {
                case 0: sing(V1, "Gets the ball back."); break;
@@ -2203,7 +2443,7 @@ void rebound(int team, int player)
             }
          announce = 1;
       }
-   } else if (game_state.possess_team == team) {
+   } else if (offensive) {
       enable_color();
       if (random(100) < 60)
          sing(V1, "& get[s|] the ball back.", team);
@@ -2222,11 +2462,24 @@ void rebound(int team, int player)
       sing(V1, "& [takes|take] possession.", team);
    }
    game_state.position = (game_state.possess_team == TEAM_0 ? 1.0f : -1.0f);
-   if (game_state.possess_team == (player < 0 ? TEAM_1 : TEAM_0))
-      stats[player].off_rebounds += 1;
+   if (offensive)
+      add_plain(SP_off_rebounds, player, 1);
    else
-      stats[player].def_rebounds += 1;
+      add_plain(SP_def_rebounds, player, 1);
+   add_plain(SP_rebounds, player, 1);
    tpossess(team, announce);
+
+   if (can_do_color()) {
+      color_statistic *list = NULL;
+      ++color_timestamp;
+      if (offensive)
+         list = color_add_analysis(list, SP_off_rebounds, player);
+      else
+         list = color_add_analysis(list, SP_def_rebounds, player);
+      color_add_analysis(list, SP_rebounds, player);
+      color_report_analysis(list);
+   }
+
    game_state.current_time = this_event_time;
    game_state.possess_action_time = this_event_time;
    game_state.possess_player = player;
@@ -2298,8 +2551,8 @@ void turnover(int type, int team, int player, int stealer)
             break;
       }
    }
-   stats[player].turnovers += 1;
-   stats[stealer].steals += 1;
+   add_plain(SP_turnovers, player , 1);
+   add_plain(SP_steals   , stealer, 1);
    tpossess(!team, 1);
    game_state.current_time = this_event_time;
    game_state.possess_player = stealer;
@@ -2422,64 +2675,64 @@ static void process_event(char *text)
       // regular shots
       if (3 == sscanf(text, "#%d 3pt Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_3pt, v[0], assist, 1, blocker, F_none);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Jump Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_none);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Turnaround Jump Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_turnaround);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Turnaround Hook Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_turnaround_hook);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Jump Bank Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_bank);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Jump Hook Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_hook);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Fade Away Jumper Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_fadeaway);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Reverse Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_reverse);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_none);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Tip Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_tip);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Dunk Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_dunk);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Running Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_running);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Running Bank shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_jump, v[0], assist, 1, blocker, F_running_bank);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Putback Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_putback);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Putback Dunk Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_putback_dunk);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Driving Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_driving);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Driving Finger Roll Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_driving_finger_roll);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Alley Oop Layup Shot: made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_alleyoop);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Alley Oop Layup shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_alleyoop);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Alley Oop Dunk Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_alleyoop_dunk);
-         assert(stats[v[0]].points == v[1]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
 
       } else if (2 == sscanf(text, "#%d 3pt Shot: Missed %d", v+0, v+8)) {
          took_shot(SHOT_3pt, v[0], assist, 0, blocker, F_none);
@@ -2521,7 +2774,7 @@ static void process_event(char *text)
          free_shot(v[0], v[1], v[2], 0);
       } else if (5 == sscanf(text, "#%d Free Throw %d of %d (%d PTS) %d", v+0, v+1, v+2, v+3, v+8)) {
          free_shot(v[0], v[1], v[2], 1);
-         assert(stats[v[0]].points == v[3]);
+         assert(stats[v[0]][0].streakable[SS_total].game.points == v[3]);
 
       // foul
       } else if (3 == sscanf(text, "#%d Foul:Personal (%d PF) %d", v+0, v+1, v+8)) {
@@ -2539,36 +2792,36 @@ static void process_event(char *text)
          rebound(t, 0);
       } else if (4 == sscanf(text, "#%d Rebound (Off:%d Def:%d) %d", v+0,v+1,v+2, v+8)) {
          rebound(t, v[0]);
-         assert(stats[v[0]].off_rebounds == v[1]);
-         assert(stats[v[0]].def_rebounds == v[2]);
+         //assert(stats[v[0]].off_rebounds == v[1]);
+         //assert(stats[v[0]].def_rebounds == v[2]);
 
       // turnovers
       } else if (3 == sscanf(text, "#%d Turnover:Traveling (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_traveling, t, v[0], 0);
-         assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:Foul (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_foul     , t, v[0], 0);
-         assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[0]].turnovers == v[1]);
       } else if (5 == sscanf(text, "#%d Turnover:Bad Pass (%d TO) Steal:#%d (%d ST) %d", v+0,v+1,v+2,v+3,v+8)) {
          turnover(TURNOVER_badpass  , t, v[0], v[2]);
-         assert(stats[v[0]].turnovers == v[1]);
-         assert(stats[v[2]].steals    == v[3]);
+         //assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[2]].steals    == v[3]);
       } else if (3 == sscanf(text, "#%d Turnover:Bad Pass (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_badpass  , t, v[0], 0);
-         assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:Out of Bounds Lost Ball Turnover (%d TO) %d", v+0,v+1, v+8)) {
          turnover(TURNOVER_out_of_bounds, t, v[0], 0);
-         assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:Palming Turnover (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_palming, t, v[0], 0);
-         assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[0]].turnovers == v[1]);
       } else if (3 == sscanf(text, "#%d Turnover:3 Second Violation (%d TO) %d", v+0,v+1,v+8)) {
          turnover(TURNOVER_3sec   , t, v[0], 0);
-         assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[0]].turnovers == v[1]);
       } else if (5 == sscanf(text, "#%d Turnover:Lost Ball (%d TO) Steal:#%d (%d ST) %d", v+0,v+1,v+2,v+3,v+8)) {
          turnover(TURNOVER_stolen , t, v[0], v[2]);
-         assert(stats[v[0]].turnovers == v[1]);
-         assert(stats[v[2]].steals    == v[3]);
+         //assert(stats[v[0]].turnovers == v[1]);
+         //assert(stats[v[2]].steals    == v[3]);
 
       // misc
       } else if (3 == sscanf(text, "#%d Substitution replaced by #%d %d", v+0, v+1, v+8)) {
@@ -2587,14 +2840,17 @@ static void process_event(char *text)
       }
       assert(v[8] == 737);
 
+      #if 0
       if (assist)
          assert(stats[assist].assists == v[7]);  
       if (blocker)
          assert(stats[blocker].blocks == v[6]);
+      #endif
    } else {
       int v[5];
       process_substitution();
       if (0 == strcmp(text, "Start of 1st Quarter")) {
+         half = quarter = 0;
          sing(V1, "Wel-come to to-night's Bas-ket-ball Bas-ket-ball As-so-ci-a-tion game.");
          sing(V1, "Fea-tur-ing && ver-sus &&.", 0, 1);
          set_lineup(TEAM_0,  1,  2,  3,  4,  5);
@@ -2603,6 +2859,7 @@ static void process_event(char *text)
          announce_lineup(1);
       } else if (0 == strcmp(text, "End of 1st Quarter")) {
          sing(V1, "That's the end of the first quar-ter.");
+         quarter = 1;
          set_lineup(TEAM_0,  1,  7,  9,  4,  8); // 7 unknown
          set_lineup(TEAM_1, -9, -2, -6, -4, -7);
          announce_lineup(0);
@@ -2625,6 +2882,8 @@ static void process_event(char *text)
          ++which;
       } else if (0 == strcmp(text, "End of 2nd Quarter")) {
          sing(V1, "That's the end of the first half.");
+         quarter = 2;
+         half = 1;
          set_lineup(TEAM_0, 1, 2, 3, 4, 5);
          set_lineup(TEAM_1, -1, -2, -3, -4, -5); 
          announce_lineup(0);
@@ -2633,6 +2892,7 @@ static void process_event(char *text)
          game_state.position = 1;
       } else if (0 == strcmp(text, "End of 3rd Quarter")) {
          sing(V1, "That's the end of the third quar-ter.");
+         quarter = 3;
          set_lineup(TEAM_0, 7, 2, 9, 6, 8);
          set_lineup(TEAM_1, -6, -7, -3, -4, -9);
          announce_lineup(0);
