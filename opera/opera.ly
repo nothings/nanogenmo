@@ -100,7 +100,11 @@
       }
     >>
   >>
-  \layout { }
+  \layout {
+     \context {
+        \Staff \RemoveEmptyStaves
+     }
+  }
 }
 
 #(define my-instrument-equalizer-alist '())
@@ -174,21 +178,21 @@
     \new ChoirStaff = "ChoirStaff_choir" <<
       \new Staff = "Staff_soprano" {
         \set Staff.instrumentName = #"Soprano"
-        \set Staff.midiInstrument = #"lead 6 (voice)"
+        \set Staff.midiInstrument = #"soprano sax"
         \new Voice = "soprano"
         \set Staff.midiPanPosition = #0
         \sopranoMusic
       }
       \new Staff = "Staff_mezzo" {
         \set Staff.instrumentName = #"Mezzo"
+        \set Staff.midiInstrument = #"harmonica"
         \new Voice = "mezzo"
-        \set Staff.midiInstrument = #"soprano sax"
         \set Staff.midiPanPosition = #0.05
         \mezzoMusic
       }
       \new Staff = "Staff_bass" {
         \set Staff.instrumentName = #"Bass"
-        \set Staff.midiInstrument = #"harmonica"
+        \set Staff.midiInstrument = #"lead 6 (voice)"
         \new Voice = "bass"
         \set Staff.midiPanPosition = #-0.05
         \vbassMusic

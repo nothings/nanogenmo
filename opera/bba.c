@@ -423,7 +423,17 @@ enum
    I_soprano,
    I_mezzo,
    I_bass,
+   I_flute,
+   I_clarinet,
+   I_horn,
+   I_trumpet,
+   I_harp,
    I_piano,
+   I_violin1,
+   I_violin2,
+   I_viola,
+   I_cello,
+   I_double_bass,
 
    I__count
 };
@@ -476,72 +486,177 @@ int find_final_chord(chord *end_chord, voicenote *phrase)
    return final_chord;
 }
 
-#if 0
-timedchord *make_timedchords(chord *start_chord, chord *end_chord, int final_chord, note *phrase)
-{
-   timedchord *tc = NULL;
-   int i;
-   for (i=0; i < stb_arr_len(phrase); ++i) {
-      timedchord c = { { -1,-1,-1 }, 0 };
-      c.duration = phrase[i].duration;
-      assert(c.duration > 0 && c.duration <= WHOLE_NOTE);
-      if (i == 0)
-         c.c = *start_chord;
-      else if (i == final_chord)
-         c.c = *end_chord;
-      stb_arr_push(tc, c);
-   }
-   return tc;
-}
-#else
 timedchord *make_timedchords(chord *start_chord, chord *end_chord, int final_chord_time, int total_time)
 {
    timedchord *tc = NULL;
-   int i;
    //int align;
    assert(total_time % WHOLE_NOTE == 0);
 
    //align = WHOLE_NOTE/4;
    //final_chord_time = (final_chord_time + (align-1)) / align * align;
 
-   for (i=0; i < total_time; i += WHOLE_NOTE/4) {
-      timedchord c = { { -1,-1,-1 }, WHOLE_NOTE/4 };
-      if (i < final_chord_time)
-         c.c = *start_chord;
-      else
-         c.c = *end_chord;
-      stb_arr_push(tc, c);
+   if (final_chord_time % WHOLE_NOTE <= WHOLE_NOTE / 2 && final_chord_time >= WHOLE_NOTE) {
+      if (random(100) < 85)
+         final_chord_time -= final_chord_time % WHOLE_NOTE;
    }
+
+   {
+      timedchord t;
+      t.c = *start_chord;
+      t.duration = final_chord_time;
+      stb_arr_push(tc, t);
+      t.c = *end_chord;
+      t.duration = total_time - final_chord_time;
+      stb_arr_push(tc, t);
+   }
+
    return tc;
 }
-#endif
+
+int *compute_times(timedchord *changes)
+{
+   int duration=0, i;
+   int *times=0;
+   for (i=0; i < stb_arr_len(changes); ++i) {
+      stb_arr_push(times, duration);
+      duration += changes[i].duration;
+   }
+   stb_arr_push(times, duration);
+   return times;
+}
+
+timedchord *play_against_timedchords(timedchord *changes, int total_time)
+{
+   int *times = compute_times(changes);
+   timedchord *tc=0;
+   int j=0, i;
+   for (i=0; i < total_time; i += WHOLE_NOTE/4) {
+      timedchord c = { { -1,-1,-1 }, WHOLE_NOTE/4 };
+
+      while (times[j+1] <= i)
+         ++j;
+      c.c = changes[j].c;
+      stb_arr_push(tc, c);
+   }
+   stb_arr_free(times);
+   return tc;
+}
 
 arranged_phrase *arrange_phrase(chord *start_chord, chord *end_chord, note *phrase, int soloist)
 {
    int duration, goal, fc, second_chord_time;
-   timedchord *tc;
+   timedchord *tc, *changes;
    arranged_phrase *p = malloc(sizeof(*p));
    memset(p,0,sizeof(*p));
 
    p->voice[soloist][0] = adapt_melody(start_chord, end_chord, phrase, 60);
-
    fc = find_final_chord(end_chord, p->voice[soloist][0]);
-
-   second_chord_time = phrase_duration(phrase, fc);
 
    duration = phrase_duration(phrase, stb_arr_len(phrase));
    goal = duration + WHOLE_NOTE*1/4;
    goal = (goal + WHOLE_NOTE-1)/WHOLE_NOTE * WHOLE_NOTE;
+
+   second_chord_time = phrase_duration(phrase, fc);
+   changes = make_timedchords(start_chord, end_chord, second_chord_time, goal);
+
+   // @TODO: refine vocal melody based on changes
+
    p->voice[soloist][0] = add_rests_at_end(p->voice[soloist][0], goal-duration);
 
-   tc = make_timedchords(start_chord, end_chord, second_chord_time, goal);
-
-
-
+   tc = play_against_timedchords(changes, goal);
    p->voice[I_piano][0] = make_chord_voice(tc, 60-12);
 
 
    return p;
+}
+
+void fixup_key(void)
+{
+   int i;
+   for (i=0; i < 2; ++i)
+      scale[i] = scale[i + 7] - 12;
+   for (i=7+2; i < 15; ++i)
+      scale[i] = scale[i - 7] + 12;
+}
+
+void drunk_walk(int slot)
+{
+   int step = random(100) < 50 ? -1 : 1;
+   int new_note = scale[slot] + step;
+   if (new_note == scale[slot-1])
+      return;
+   if (new_note == scale[slot+1])
+      return;
+   scale[slot] = new_note;
+}
+
+int major[7] = { 0,2,4, 5,7,9,11 };
+int reset_keyarr[9] = { 0,2,4, 5,7,9,11, 12, 14 };
+
+void spread_key(void)
+{
+   int i;
+   int newscale[7];
+   float weight = random_range(25,75) / 100.0f;
+
+   newscale[0] = (int) ceil(stb_lerp(0.66, scale[2], scale[1]));
+   for (i=1; i < 7; ++i)
+      newscale[i] = newscale[0] + major[i];
+
+   for (i=0; i < 7; ++i)
+      scale[2+i] = floor(stb_lerp(weight, scale[2+i], newscale[i]) + 0.5);
+
+   for (i=1; i < 7; ++i)
+      if (scale[2+i] <= scale[2+i-1])
+         scale[2+i] = scale[2+i-1] + random_range(1,2);
+   fixup_key();
+
+   if (scale[8] >= scale[9]) {
+      printf("[force] ");
+      for (i=0; i < 7; ++i)
+         scale[2+i] = newscale[i];
+      fixup_key();
+   }
+}
+
+void reset_key(void)
+{
+   int i;
+   for (i=0; i < 9; ++i)
+      scale[i] = reset_keyarr[i];
+   fixup_key();
+}
+
+
+void randomize_key(void)
+{
+   int i;
+   return;
+   {
+      if (random(100) < 50) {
+         drunk_walk(random_range(2, 7+2-1));
+         fixup_key();
+         if (random(100) < 50) {
+            drunk_walk(random_range(2, 7+2-1));
+            fixup_key();
+            if (random(100) < 50) {
+               drunk_walk(random_range(2, 7+2-1));
+               fixup_key();
+               if (random(100) < 50) {
+                  drunk_walk(random_range(2, 7+2-1));
+                  fixup_key();
+               }
+            }
+         }
+         printf("drunk : ");
+      } else {
+         spread_key();
+         printf("spread: ");
+      }
+   }
+   for (i=0; i < 7; ++i)
+      printf("%d ", scale[i]);
+   printf("\n");
 }
 
 arranged_phrase **song;
@@ -554,6 +669,16 @@ void create_music(void)
       arranged_phrase *p;
       chord a,b;
       note *nlist;
+
+      if (i % 8 == 0) {
+         reset_key();
+      } else {
+         if (i % 2 == 0)
+            randomize_key();
+      }
+
+
+
       nlist = generate_phrase(stb_arr_len(syl));
       random_chord(&a);
       do
@@ -570,6 +695,7 @@ void create_music(void)
       for (j=0; j < stb_arr_len(song); ++j)
          for (k=0; k < stb_arr_len(song[j]->voice[I_piano][0]); ++k)
             assert(song[j]->voice[I_piano][0][k].duration > 0 && song[j]->voice[I_piano][0][k].duration <= WHOLE_NOTE);
+
    }
 }
 
@@ -690,26 +816,38 @@ void write_music(void)
 
    f = fopen("music.ly", "w");
    fprintf(f, "\\version \"2.18.2\"\n\n");
-   fprintf(f, "fluteMusic = \\relative c' { r }\n");
-   fprintf(f, "clarinetMusic = \\relative c'' { r }\n");
-   fprintf(f, "trumpetMusic = \\relative c { r }\n");
-   fprintf(f, "hornMusic = \\relative c { r }\n");
-   fprintf(f, "pianoRHMusic = \\relative c { r }\n");
-   fprintf(f, "pianoLHMusic = { \\clef bass {\n");
-   do_instrument_music(I_piano);
-   fprintf(f, "  }\n}\n");
-   fprintf(f, "violinIMusic = \\relative c' { r }\n");
-   fprintf(f, "violinIIMusic = \\relative c' { r }\n");
-   fprintf(f, "violaMusic = \\relative c { \\clef alto r }\n");
-   fprintf(f, "celloMusic = \\relative c { \\clef bass r }\n");
-   fprintf(f, "bassMusic = \\relative c { \\clef \"bass_8\" r }\n");
-   fprintf(f, "harpMusic = \\relative c'' {r  }\n");
-   fprintf(f, "\n");
-   fprintf(f, "sopranoMusic = {\n"); do_instrument_music(I_soprano); fprintf(f, "\n}\n");
+   fprintf(f, "pianoRHMusic = { r }\n");
+
+   for (i=0; i < I__count; ++i) {
+      static char *name[I__count][2] = {
+         { "sopranoMusic",   NULL, },
+         { "mezzoMusic",     "\"treble_8\"" },
+         { "vbassMusic",     "bass" },
+         { "fluteMusic",     NULL, },
+         { "clarinetMusic",  NULL, },
+         { "hornMusic",      NULL, },
+         { "trumpetMusic",   NULL, },
+         { "harpMusic",      NULL, },
+         { "pianoLHMusic",   "bass" },
+         { "violinIMusic",   NULL, },
+         { "violinIIMusic",  NULL, },
+         { "violaMusic",     "alto" },
+         { "celloMusic",     "bass" },
+         { "bassMusic",     "\"bass_8\"" }
+      };
+
+      if (name[i][1])
+         fprintf(f, "%s = { \\clef %s ", name[i][0], name[i][1]);
+      else
+         fprintf(f, "%s = { ", name[i][0], name[i][1]);
+
+      do_instrument_music(i);
+
+      fprintf(f, "}\n\n");
+   }
+
    fprintf(f, "sopranoLyrics = \\lyricmode {\n"); do_vocal_lyrics(I_soprano); fprintf(f, "\n}\n");
-   fprintf(f, "mezzoMusic = {\n")  ; do_instrument_music(I_mezzo  ); fprintf(f, "\n}\n");
    fprintf(f, "mezzoLyrics = \\lyricmode {\n")  ; do_vocal_lyrics(I_mezzo  ); fprintf(f, "\n}\n");
-   fprintf(f, "vbassMusic = {\n")  ; do_instrument_music(I_bass   ); fprintf(f, "\n}\n");
    fprintf(f, "vbassLyrics = \\lyricmode {\n")  ; do_vocal_lyrics(I_bass   ); fprintf(f, "\n}\n");
    fclose(f);
 }
