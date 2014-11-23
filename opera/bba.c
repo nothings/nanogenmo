@@ -143,6 +143,8 @@ void lily_print_duration(int duration)
       case WHOLE_NOTE*3/4: fprintf(f, "2. "); break;
       case WHOLE_NOTE*1/8: fprintf(f, "8 "); break;
       case WHOLE_NOTE*3/8: fprintf(f, "4. "); break;
+      case WHOLE_NOTE*3/16: fprintf(f, "8. "); break;
+      case WHOLE_NOTE*1/16: fprintf(f, "16 "); break;
       default: assert(0);
    }
 }
@@ -307,7 +309,11 @@ note *generate_phrase(int num_notes)
       if (low_cap < 0 || low_cap > 3)
          low_cap = random(3);
 
-      if (random(100) < 80)
+      if (random(100) < 5)
+         n.duration = WHOLE_NOTE / 2;
+      else if (random(100) < 10)
+         n.duration = WHOLE_NOTE*3/8;
+      else if (random(100) < 80)
          n.duration = WHOLE_NOTE / 8;
       else
          n.duration = WHOLE_NOTE / 4;
@@ -423,12 +429,13 @@ enum
    I_soprano,
    I_mezzo,
    I_bass,
+
+   I_piano,
    I_flute,
    I_clarinet,
-   I_horn,
    I_trumpet,
+   I_horn,
    I_harp,
-   I_piano,
    I_violin1,
    I_violin2,
    I_viola,
@@ -525,18 +532,128 @@ int *compute_times(timedchord *changes)
    return times;
 }
 
-timedchord *play_against_timedchords(timedchord *changes, int total_time)
+char *timing_patterns[] =
 {
-   int *times = compute_times(changes);
-   timedchord *tc=0;
-   int j=0, i;
-   for (i=0; i < total_time; i += WHOLE_NOTE/4) {
-      timedchord c = { { -1,-1,-1 }, WHOLE_NOTE/4 };
+   "x..x..x.",
+   "x.x.x...",
+   "x...x.x.",
+   "x.xx.xx.",
+   "xxx.....",
+   "xxx..x..",
+   "xxx...x.",
+};
 
-      while (times[j+1] <= i)
-         ++j;
-      c.c = changes[j].c;
-      stb_arr_push(tc, c);
+
+enum
+{
+   MODE_quarters,
+   MODE_eighths,
+   MODE_sixteenths,
+   MODE_pattern,
+
+   MODE_silent,
+
+   MODE__count
+};
+
+int instrument_mode[I__count];
+int instrument_voice[I__count];
+
+#define MIDDLE_C   60
+
+int instrument_low[I__count] =
+{
+   MIDDLE_C,
+   MIDDLE_C-3,
+   MIDDLE_C-12,
+
+   MIDDLE_C-12,
+
+   MIDDLE_C+12,
+   MIDDLE_C,
+
+   MIDDLE_C-12,
+   MIDDLE_C-24,
+
+   MIDDLE_C,
+
+   MIDDLE_C-5,
+   MIDDLE_C-5,
+   MIDDLE_C-12,
+   MIDDLE_C-24,
+   MIDDLE_C-29
+};
+
+static int pattern=0;
+char *pick_a_random_pattern(int instrument)
+{
+   switch (instrument_mode[instrument]) {
+      case MODE_silent    : return ".";
+      case MODE_quarters  : return "xxxx"; 
+      case MODE_eighths   : return "xxxxxxxx";
+      case MODE_sixteenths: return "xxxxxxxxxxxxxxxx";
+      case MODE_pattern   : return timing_patterns[pattern];
+      default: assert(0); return 0;
+   }
+}
+
+void init_instrument_modes(void)
+{
+   int i;
+   int likelihood = random_range(20,80);
+
+   for (i=0; i < I__count; ++i)
+      if (random(100) < likelihood)
+         instrument_mode[i] = random(MODE__count);
+      else
+         instrument_mode[i] = MODE_silent;
+
+   for (i=0; i < I__count; ++i)
+      instrument_voice[i] = i % 3;
+   instrument_voice[I_piano] = -1;
+}
+
+
+timedchord *play_against_timedchords(timedchord *changes, int total_time, int instrument)
+{
+   int stepsize;
+   char *pattern = pick_a_random_pattern(instrument);
+   int *times = compute_times(changes);
+   int voice_select = instrument_voice[instrument];
+   timedchord *tc=0;
+   int j=0, start, k, len = strlen(pattern);
+
+   stepsize = WHOLE_NOTE/strlen(pattern);
+
+   start=0;
+   for(start=0; start*stepsize < total_time; ) {
+      timedchord c = { { -1,-1,-1 }, 0 };
+      k = start+1;
+      // advance the offset to next 'x'
+      while (pattern[k%len] != 'x' && k*stepsize < total_time)
+         ++k;
+      if (pattern[start%len] == 'x') {
+         while (times[j+1] <= start*stepsize)
+            ++j;
+         if (voice_select == -1)
+            c.c = changes[j].c;
+         else
+            c.c.scalenote[0] = changes[j].c.scalenote[voice_select];
+      }
+      if (k-start >= 5 && k-start != 8) {
+         do {
+            c.duration = 4 * stepsize;
+            stb_arr_push(tc, c);
+            c.c.scalenote[0] = c.c.scalenote[1] = c.c.scalenote[2] = -1;
+            start += 4;
+         } while (k-start > 4);
+         c.duration = (k-start)*stepsize;
+         stb_arr_push(tc,c);
+      } else {
+         c.duration = (k-start)*stepsize;
+         stb_arr_push(tc, c);
+      }
+      start = k;
    }
    stb_arr_free(times);
    return tc;
@@ -544,7 +661,7 @@ timedchord *play_against_timedchords(timedchord *changes, int total_time)
 
 arranged_phrase *arrange_phrase(chord *start_chord, chord *end_chord, note *phrase, int soloist)
 {
-   int duration, goal, fc, second_chord_time;
+   int duration, goal, fc, second_chord_time, i;
    timedchord *tc, *changes;
    arranged_phrase *p = malloc(sizeof(*p));
    memset(p,0,sizeof(*p));
@@ -563,9 +680,19 @@ arranged_phrase *arrange_phrase(chord *start_chord, chord *end_chord, note *phra
 
    p->voice[soloist][0] = add_rests_at_end(p->voice[soloist][0], goal-duration);
 
-   tc = play_against_timedchords(changes, goal);
-   p->voice[I_piano][0] = make_chord_voice(tc, 60-12);
+   for (i=I_piano; i < I__count; ++i) {
+      tc = play_against_timedchords(changes, goal, i);
+      p->voice[i][0] = make_chord_voice(tc, instrument_low[i] - instrument_low[i]%12);
+   }
 
+   {
+      static int timer=0;
+      if (timer == 0) {
+         pattern = random_range(0,6);
+         timer = 2;
+      }
+      --timer;
+   }
 
    return p;
 }
@@ -663,12 +790,16 @@ arranged_phrase **song;
 
 void create_music(void)
 {
-   int i,j,k;
+   int i;
+
    for (i=0; i < stb_arr_len(vocals); ++i) {
       char **syl = vocals[i].syllables;
       arranged_phrase *p;
       chord a,b;
       note *nlist;
+
+      if (i % 32 == 0)
+         init_instrument_modes();
 
       if (i % 8 == 0) {
          reset_key();
@@ -676,8 +807,6 @@ void create_music(void)
          if (i % 2 == 0)
             randomize_key();
       }
-
-
 
       nlist = generate_phrase(stb_arr_len(syl));
       random_chord(&a);
@@ -691,10 +820,6 @@ void create_music(void)
          p->voice[I_bass ][0] = p->voice[I_soprano][0];
       }
       stb_arr_push(song, p);
-
-      for (j=0; j < stb_arr_len(song); ++j)
-         for (k=0; k < stb_arr_len(song[j]->voice[I_piano][0]); ++k)
-            assert(song[j]->voice[I_piano][0][k].duration > 0 && song[j]->voice[I_piano][0][k].duration <= WHOLE_NOTE);
 
    }
 }
@@ -805,14 +930,10 @@ void do_vocal_lyrics(int inst)
 #if 1
 void write_music(void)
 {
-   int i,j;
+   int i;
    syllable_map = stb_sdict_new(1);
 
    create_music();
-
-   for (j=0; j < stb_arr_len(song); ++j)
-      for (i=0; i < stb_arr_len(song[j]->voice[I_piano][0]); ++i)
-         assert(song[j]->voice[I_piano][0][i].duration > 0 && song[j]->voice[I_piano][0][i].duration <= WHOLE_NOTE);
 
    f = fopen("music.ly", "w");
    fprintf(f, "\\version \"2.18.2\"\n\n");
@@ -823,12 +944,12 @@ void write_music(void)
          { "sopranoMusic",   NULL, },
          { "mezzoMusic",     "\"treble_8\"" },
          { "vbassMusic",     "bass" },
+         { "pianoLHMusic",   "bass" },
          { "fluteMusic",     NULL, },
          { "clarinetMusic",  NULL, },
-         { "hornMusic",      NULL, },
          { "trumpetMusic",   NULL, },
+         { "hornMusic",      NULL, },
          { "harpMusic",      NULL, },
-         { "pianoLHMusic",   "bass" },
          { "violinIMusic",   NULL, },
          { "violinIIMusic",  NULL, },
          { "violaMusic",     "alto" },
