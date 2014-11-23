@@ -53,18 +53,21 @@
       \new Staff { \pianoLHMusic }
     >>
     \new ChoirStaff = "ChoirStaff_choir" <<
+
       \new Staff = "Staff_soprano" {
         \set Staff.instrumentName = #"Soprano"
         \new Voice = "soprano"
         \sopranoMusic
       }
       \new Lyrics \lyricsto "soprano" { \sopranoLyrics }
+
       \new Staff = "Staff_mezzo" {
         \set Staff.instrumentName = #"Mezzo"
         \new Voice = "mezzo"
         \mezzoMusic
       }
       \new Lyrics \lyricsto "mezzo" { \mezzoLyrics }
+
       \new Staff = "Staff_bass" {
         \set Staff.instrumentName = #"Bass"
         \new Voice = "bass"
