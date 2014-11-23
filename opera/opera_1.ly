@@ -12,7 +12,7 @@
 
 % \language "english"
 
-\include "music.ly"
+\include "music_1.ly"
 
 \score {
   <<
@@ -122,6 +122,7 @@
          ("violin" . (0.2 . 0.6))
          ("viola" . (0.1 . 0.7))
          ("cello" . (0.2 . 0.8))
+         ("orchestral harp" . (0.2 . 0.6))
          ("contrabass" . (0.2 . 0.8))
       )
     my-instrument-equalizer-alist))
@@ -234,7 +235,6 @@
     >>
   >>
   \midi {
-    \tempo 4 = 120
   }
 }
 
