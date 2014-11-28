@@ -2963,8 +2963,8 @@ typedef struct
 #define stb_arrhead2(a)        /*lint --e(826)*/ (((stb__arr *) (a)) - 1)
 
 #ifdef STB_DEBUG
-#define stb_arr_check(a)       assert(!a || stb_arrhead(a)->signature == stb_arr_signature)
-#define stb_arr_check2(a)      assert(!a || stb_arrhead2(a)->signature == stb_arr_signature)
+#define stb_arr_check(a)       0//assert(!a || stb_arrhead(a)->signature == stb_arr_signature)
+#define stb_arr_check2(a)      0//assert(!a || stb_arrhead2(a)->signature == stb_arr_signature)
 #else
 #define stb_arr_check(a)       0
 #define stb_arr_check2(a)      0
