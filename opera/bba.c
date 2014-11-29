@@ -11,7 +11,7 @@ int g_songnum;
 #define MIDDLE_C   60
 
 #define OUTPUT_START   0
-#define OUTPUT_END     256
+#define OUTPUT_END     300
 
 // TODO-ish: lyrics
 //   don't do two "with"s in a row for rebound & possession
@@ -135,21 +135,44 @@ typedef struct
 } pitch;
 #endif
 
-static char *lilynote[12] =
+enum
 {
-   "c",
-   "cis",
-   "d",
-   "dis",
-   "e",
-   "f",
+   KEY_sharp,
+   KEY_flat,
+};
 
-   "fis",
-   "g",
-   "gis",
-   "a",
-   "ais",
-   "b",
+static char *lilynote[2][12] =
+{
+   {
+      "c",
+      "cis",
+      "d",
+      "dis",
+      "e",
+      "f",
+
+      "fis",
+      "g",
+      "gis",
+      "a",
+      "ais",
+      "b",
+   },
+   {
+      "c",
+      "des",
+      "d",
+      "ees",
+      "e",
+      "f",
+
+      "ges",
+      "g",
+      "aes",
+      "a",
+      "bes",
+      "b",
+   }
 };
 
 FILE *f;
@@ -194,6 +217,7 @@ void lily_print_duration(int duration)
    }
 }
 
+int current_key_is_flat;
 void lily_print_note(int note)
 {
    if (note > 0) {
@@ -202,7 +226,7 @@ void lily_print_note(int note)
       assert(note >= 12);
       pc = note-60+5*12 - 12*octave;
       assert(pc >= 0 && pc < 12);
-      fprintf(f, "%s", lilynote[pc]);
+      fprintf(f, "%s", lilynote[current_key_is_flat][pc]);
       while (octave > 4) {
          fprintf(f, "'");
          --octave;
@@ -302,7 +326,7 @@ int do_print;
 
 float cur_intensity;
 
-note *generate_phrase(int num_notes)
+note *generate_phrase(int num_notes, char **syl)
 {
    int i;
    int dir;
@@ -378,6 +402,19 @@ note *generate_phrase(int num_notes)
          n.duration = WHOLE_NOTE / 4;
       if (i == num_notes-1)
          n.duration = WHOLE_NOTE*3/8;
+
+      #if 1
+      if (i < num_notes-1) {
+         char *s = syl[i] + strlen(syl[i]);
+         if (s[-1] == ',') {
+            if (n.duration < WHOLE_NOTE/2)
+               n.duration = WHOLE_NOTE/2;
+         } else if (s[-1] == '.' && s[-2] == '.') {
+            if (n.duration < WHOLE_NOTE/2)
+               n.duration = WHOLE_NOTE/2;
+         }
+      }
+      #endif
 
       stb_arr_push(list, n);
    }
@@ -838,8 +875,8 @@ char *arp_table[][12] =
       { // 2/4 not really arpeggios
          "321:0202",
          "0123:2020",
-         ":0303",
-         ":3030",
+         "3:0303",
+         "0:3030",
          "00000:32100000",
          "00000:00000123",
       },
@@ -859,24 +896,23 @@ char *arp_table[][12] =
          "012:345354",
       },
       { // 7/8
-         ":0123212",
-         ":3210210",
-         ":3210101",
-         ":0011223",
+         "212:0123212",
+         "210:3210210",
+         "101:3210101",
+         "223:0011223",
       },
       { // 5/8
-         ":01212",
-         ":01232",
-         ":30121",
-         ":32010",
-         ":20010",
+         "212:01212",
+         "232:01232",
+         "121:30121",
+         "010:32010",
+         "010:20010",
       },
 };
 
 int arp_table_len[] = { 6,6,4,7,4,5 };
 
 int instr;
-int crazy_buggy_arpeggios;
 char *instrument_arp[I__count];
 
 int div_floor(int x, int y)
@@ -918,7 +954,6 @@ voicenote *make_chord_voice(timedchord *c, int low_range, int high_range, int *v
    int vm_index = 0;
    int arp_index = 1;
    int total_duration=0;
-   int num_voices=0;
    int arpstart;
    int octave_offset[3] = { 0,0,0 };
    int starting_note[3] = { 0,0,0 };
@@ -930,9 +965,6 @@ voicenote *make_chord_voice(timedchord *c, int low_range, int high_range, int *v
       else
          arpstart = arp[0] - '0';
    }
-
-   while (voicemask[num_voices])
-      ++num_voices;
 
    // pick initial pitches
 
@@ -1075,10 +1107,7 @@ voicenote *song2_make_chord_voice(timedchord *c, int low_range, int high_range, 
                int nt;
                int p;
                
-               if (crazy_buggy_arpeggios)
-                  nt = c[k].c.scalenote[i];
-               else
-                  nt = c[i].c.scalenote[j];  
+               nt = c[i].c.scalenote[j];  
                p = scale[nt % SCALE_PITCHES] % 12;
                if (midi_note[j] % 12 != p) {
                   int offset = p - (midi_note[j] % 12);
@@ -1330,11 +1359,36 @@ char *pattern_for_part(int part)
 
 int my_tempo = 120;
 
+int song4_random_mode(void)
+{
+   float t;
+   int i, r;
+   int distribution[5];
+
+   t = stb_linear_remap(cur_intensity, 0.2, 1.0, 0, 1);
+   t = stb_clamp(cur_intensity, 0, 1);
+
+   distribution[MODE_silent]    = 0;
+   distribution[MODE_eighths]   = 100;
+   distribution[MODE_sixteenths]= stb_lerp(t*t,   5, 300);
+   distribution[MODE_quarters]  = stb_lerp(t  ,  80, 5);
+   distribution[MODE_pattern]   = stb_lerp(t  , 150, 10);
+   for (i=1; i < MODE__count; ++i)
+      distribution[i] += distribution[i-1];      
+   r = random(distribution[MODE__count-1]);
+   for (i=0; i < MODE__count; ++i)
+      if (r < distribution[i]) {
+         assert(i < 4);
+         return i;
+      }
+   assert(0);
+   return MODE_eighths;
+}
+
 int random_mode(void)
 {
    int r = random(100);
-   if (g_songnum == 4 && random(100) < 30)
-      return MODE_eighths;
+
    if (r < 35)
       return MODE_pattern;
    if (r < 65)
@@ -1363,6 +1417,12 @@ void set_parts(void)
       if (random(100) < likelihood)
          ++n;
    }
+   if (g_songnum == 4) {
+      num_parts = 4;
+      for (i=0; i < 4; ++i)
+         part_mode[i] = i;
+      return;
+   }
    n = 3;
    num_parts = n;
    for (i=0; i < n; ++i) {
@@ -1379,11 +1439,10 @@ void set_parts(void)
          if (tries > 100)
             break;
       }
-      i=i;
 
       part_mode[i] = r;
    }
-   assert(num_parts < NUM_PARTS);
+   assert(num_parts <= NUM_PARTS);
 }
 
 void song2_set_parts(void)
@@ -1417,8 +1476,6 @@ void song2_set_parts(void)
    assert(num_parts < NUM_PARTS);
 }
 
-int instrument_flags[I__count];
-
 typedef struct
 {
    int part,voice;
@@ -1430,6 +1487,43 @@ typedef struct
 } subsection_info;
 
 subsection_info *cur_section;
+int instrument_flags[I__count];
+
+int part_priority[4] = { 1,0,2,3 };
+
+int swap_violin_parts(void)
+{
+   if (instrument_part[I_violin1] < 0 && instrument_part[I_violin2] >= 0)
+      return 1;
+   if (instrument_part[I_violin1] >= 0 && instrument_part[I_violin2] >= 0)
+      if (part_priority[part_mode[instrument_part[I_violin2]]] >= part_priority[part_mode[instrument_part[I_violin1]]])
+         return 1;
+   return 0;
+}
+
+float song_phase;
+
+int arp_phase_shift_chance(void)
+{
+   if (g_songnum == 4) {
+      //     X   X
+      //    X   X X
+      //   X   X   X
+      //  X   X     X
+      float num = song_phase * 5;
+      int segment = floor(num);
+      float t = num - segment;
+      if (segment == 4)
+         return stb_lerp(t, 100, 0);
+      else if (segment == 0)
+         return stb_lerp(t, 0, 75);
+      else if (segment == 1 || segment == 3)
+         return stb_lerp(t, 25, 75);
+      else
+         return stb_lerp(t, 50, 100);
+   } else
+      return 0;
+}
 
 void init_instrument_modes(void)
 {
@@ -1438,24 +1532,33 @@ void init_instrument_modes(void)
    int num_instruments;
    int cur=0;
    int *ilist=NULL;
-
+   
    char *part_arp[NUM_PARTS];
 
    for (i=0; i < NUM_PARTS; ++i)
       part_arp[i] = cur_section->arp[random(4)];
+
+   if (g_songnum == 4) {
+      part_arp[0] = cur_section->arp[0];
+      part_arp[1] = cur_section->arp[1];
+   }
 
    if (g_songnum == 2) {
       likelihood = 30 + (int) (60*cur_intensity);
       num_instruments = stb_linear_remap(likelihood+random(30), 30, 120, 2, I__count-3);
    } else {
       likelihood = 30 + (int) (60*cur_intensity);
-      num_instruments = stb_linear_remap(likelihood+random(30), 30, 120, 2, I__count-3);
+      num_instruments = stb_linear_remap(likelihood+random(20), 20, 120, 1, I__count-1);
+      num_instruments = stb_clamp(num_instruments, 2, I__count-3);
    }
 
    //num_instruments = I__count-3;
    //likelihood=120;
-   
-   for (i=0; i < 3; ++i) {
+
+   i = 3;   
+   if (g_songnum == 4)
+      i = 5;
+   for (; i > 0; --i) {
       int r = random(I__count);
       instrument_flags[r] = !instrument_flags[r];
    }
@@ -1471,7 +1574,11 @@ void init_instrument_modes(void)
    }
 
    for (i=3; i < I__count; ++i) {
-      instrument_part[i] = instrument_flags[i] ? random(num_parts) : -1;
+      if (g_songnum == 4)
+         instrument_part[i] = instrument_flags[i] ? song4_random_mode() : -1;
+      else
+         instrument_part[i] = instrument_flags[i] ? random(num_parts) : -1;
+      assert(instrument_part[i] < num_parts);
 
       if (instrument_part[i] >= 0) {
          if (g_songnum == 2) {
@@ -1486,73 +1593,111 @@ void init_instrument_modes(void)
          }
 
          if (my_tempo > sixteenth_tempo_threshhold[i] && part_mode[instrument_part[i]] == MODE_sixteenths) {
-            instrument_part[i] = random(num_parts);
+            instrument_part[i] = g_songnum == 4 ? song4_random_mode() : random(num_parts);
             if (my_tempo > sixteenth_tempo_threshhold[i] && part_mode[instrument_part[i]] == MODE_sixteenths) {
-               instrument_part[i] = -1;
+               if (g_songnum == 4)
+                  instrument_part[i] = random_range(1,2);
+               else
+                  instrument_part[i] = -1;
                continue;
             }
          }
          stb_arr_push(ilist, i);
       }
-
    }
 
-   stb_shuffle(ilist, stb_arr_len(ilist), sizeof(ilist[0]), stb_rand());
+   if (g_songnum != 4) {
+      stb_shuffle(ilist, stb_arr_len(ilist), sizeof(ilist[0]), stb_rand());
 
-   k = 0;
-   for (i=0; i < num_parts; ++i) {
-      int req_voice[3] = { 1,1,1 };
-      if (random(100) > likelihood)
-         req_voice[random(3)] = 0;
-      for (j=0; j < 3; ++j) {
-         if (req_voice[j]) {
-            int inst;
-            int m = 1 << j;
-            if (k >= stb_arr_len(ilist))
-               goto done;
+      k = 0;
+      for (i=0; i < num_parts; ++i) {
+         int req_voice[3] = { 1,1,1 };
+         if (random(100) > likelihood)
+            req_voice[random(3)] = 0;
+         for (j=0; j < 3; ++j) {
+            if (req_voice[j]) {
+               int inst;
+               int m = 1 << j;
+               if (k >= stb_arr_len(ilist))
+                  goto done;
 
-            inst = ilist[k];
-            if (part_mode[i] == MODE_sixteenths) {
-               int z=0;
-               while (my_tempo > sixteenth_tempo_threshhold[inst]) {
-                  stb_arr_delete(ilist, k);
-                  stb_arr_push(ilist, inst);
-                  ++z;
-                  if (z == 10)
-                     goto skip_part;
+               inst = ilist[k];
+               if (part_mode[i] == MODE_sixteenths) {
+                  int z=0;
+                  while (my_tempo > sixteenth_tempo_threshhold[inst]) {
+                     stb_arr_delete(ilist, k);
+                     stb_arr_push(ilist, inst);
+                     ++z;
+                     if (z == 10)
+                        goto skip_part;
+                  }
                }
-            }
-            k++;
-            if (inst == I_piano || inst == I_harp) {
-               if (j == 0) {
-                  if (req_voice[1])
-                     m |= 1 << 1;
+               k++;
+               if (inst == I_piano || inst == I_harp) {
+                  if (j == 0) {
+                     if (req_voice[1])
+                        m |= 1 << 1;
+                  }
+                  if (j < 2)
+                     if (req_voice[2])
+                        m |= 1 << 2;
+                  j = 3; // terminate j loop when we continue
                }
-               if (j < 2)
-                  if (req_voice[2])
-                     m |= 1 << 2;
-               j = 3; // terminate j loop when we continue
+               instrument_part[inst] = i;
+               instrument_voice[inst][0] = m;
+               instrument_voice[inst][1] = 0;
             }
-            instrument_part[inst] = i;
-            instrument_voice[inst][0] = m;
-            instrument_voice[inst][1] = 0;
          }
+        skip_part:
+         ;
       }
-     skip_part:
+     done:
       ;
    }
- done:
 
    for (i=0; i < I__count; ++i) {
       instrument_arp[i] = NULL;
       if (instrument_part[i] >= 0) {
          int p = instrument_part[i];
-         if (g_songnum == 4)
-            p=p;
          if (random(100) < arpeggio_chance[g_songnum][part_mode[p]]) {
             instrument_arp[i] = part_arp[p];
          }
+       
+         if (g_songnum == 4 && part_mode[p] == MODE_sixteenths && instrument_arp[i] == NULL)
+            assert(0);
+
+         if (g_songnum == 4 && random(100) < 40)
+            instrument_arp[i] = cur_section->arp[random(4)];
+               
+         if (instrument_arp[i] != NULL && random(100) < arp_phase_shift_chance()) {
+            char *s = instrument_arp[i];
+            int initial_phase = strchr(s, ':') - s;
+            if (initial_phase) {
+               s += random(initial_phase);
+               instrument_arp[i] = s;
+            }
+         }
       }
+   }
+
+#if 0
+   if (g_songnum == 4) {
+      int modes[5] = { 0,0,0,0,0 };
+      float total=0;
+      for (i=3; i < I__count; ++i) {
+         if (instrument_part[i] >= 0) {
+            modes[part_mode[instrument_part[i]]] += 1;  
+            total += 1;
+         }
+      }
+      printf("%3d %2d %d %d %d %d  %4.2f %4.2f %4.2f %4.2f\n", likelihood, (int) total, modes[0], modes[1], modes[2], modes[3], modes[0]/total, modes[1]/total, modes[2]/total, modes[3]/total);
+   }
+#endif
+
+   if (swap_violin_parts()) {
+      stb_swap(&instrument_flags[I_violin1], &instrument_flags[I_violin2], sizeof(instrument_flags[0]));
+      stb_swap(&instrument_part [I_violin1], &instrument_part [I_violin2], sizeof(instrument_part[0]));
+      stb_swap(&instrument_voice[I_violin1], &instrument_voice[I_violin2], sizeof(instrument_voice[0]));
    }
 
    stb_arr_free(ilist);
@@ -1563,7 +1708,7 @@ timedchord *play_against_timedchords(timedchord *changes, int total_time, int pa
    int stepsize;
    char *pattern = pattern_for_part(part);
    int *times = compute_times(changes);
-   int voice_select = 7;//instrument_voice[instrument];
+   int voice_select = 7;
    timedchord *tc=0;
    int j=0, start, k, len = strlen(pattern);
 
@@ -1608,7 +1753,7 @@ timedchord *song2_play_against_timedchords(timedchord *changes, int total_time, 
    int stepsize;
    char *pattern = pattern_for_part(part);
    int *times = compute_times(changes);
-   int voice_select = 7;//instrument_voice[instrument];
+   int voice_select = 7;
    timedchord *tc=0;
    int j=0, start, k, len = strlen(pattern);
 
@@ -1879,6 +2024,12 @@ void set_teeth(int t1, float w1, int t2, float w2)
    tooth2weight = w2;
 }
 
+void clear_teeth(void)
+{
+   tooth1weight = 0;
+   tooth2weight = 0;
+}
+
 float get_intensity_base(int i, int num)
 {
    if (has_midpoint) {
@@ -1902,6 +2053,7 @@ float get_intensity(int i, int num)
 typedef struct
 {
    int key;
+   char *arps[4];
 } section_info;
 
 section_info    section_config[256];
@@ -1933,6 +2085,17 @@ int key_conflict(int a, int b)
    if (a == b)
       return 100;
    return 100-modulation_suitability[dist];
+}
+
+int find_structure_for_structure(structure_desc *structure, int find_index, int find_value, int return_index)
+{
+   int i;
+   for (i=0; i < stb_arr_len(structure); ++i) {
+      if (find_value == structure[i].state[find_index])
+         return structure[i].state[return_index];
+   }
+   assert(0);
+   return 0;
 }
 
 int *key_for_phrase;
@@ -1993,11 +2156,6 @@ void do_song(int songnum)
          num_structure2 = structure[i].state[1];
    }
 
-   for (i=0; i <= num_structure; ++i) {
-      for (j=0; j < 4; ++j)
-         phrase_config[i].arp[j] = song_arp_table[random(num_song_arps)];
-   }
-
    for (i=0; i < 4; ++i) {
       int badness[12];
       int sum = 0, wt;
@@ -2024,10 +2182,54 @@ void do_song(int songnum)
    }
 
    for (i=0; i <= num_structure2; ++i) {
-      if (songnum == 4)
+      if (songnum == 4) {
+         int tab0,tab1;
+         if (i == 0) {
+            tab0 = 0;
+            tab1 = 2;
+         } else if (i == 1) {
+            tab0 = random_range(0,3);
+            tab1 = random_range(4,5);
+         } else {
+            tab1 = random_range(0,5);
+            if (tab1 < 2)
+               tab0 = random_range(2,3);
+            else if (tab1 < 4)
+               tab0 = random_range(0,1);
+            else
+               tab0 = random_range(0,3);
+         }
          section_config[i].key = keylist[random(4)];
-      else
+         section_config[i].arps[0] = arp_table[tab0][random(arp_table_len[tab0])];
+         do {
+            section_config[i].arps[1] = arp_table[tab0][random(arp_table_len[tab0])];
+         } while (section_config[i].arps[0] == section_config[i].arps[1]);
+         section_config[i].arps[2] = arp_table[tab1][random(arp_table_len[tab1])];
+         do {
+            section_config[i].arps[3] = arp_table[tab1][random(arp_table_len[tab1])];
+         } while (section_config[i].arps[2] == section_config[i].arps[3]);
+      } else
          section_config[i].key = 0;
+   }
+
+   for (i=0; i <= num_structure; ++i) {
+      if (songnum == 4) {
+         int s2 = find_structure_for_structure(structure, 0, i, 1);
+         assert(s2 <= num_structure2);
+         if (random(100) < 80) {
+            phrase_config[i].arp[0] = section_config[s2].arps[random_range(0,1)];
+            phrase_config[i].arp[1] = section_config[s2].arps[random_range(2,3)];
+         } else {
+            int j;
+            for (j=0; j < 4; ++j)
+               phrase_config[i].arp[j] = section_config[s2].arps[j];
+            stb_shuffle(phrase_config[i].arp, 4, sizeof(phrase_config[i].arp[0]), stb_rand());
+         }
+         phrase_config[i].arp[2] = phrase_config[i].arp[0];
+         phrase_config[i].arp[3] = phrase_config[i].arp[1];
+      } else
+         for (j=0; j < 4; ++j)
+            phrase_config[i].arp[j] = song_arp_table[random(num_song_arps)];
    }
 
    for (i=0; i < stb_arr_len(vocals); ++i) {
@@ -2037,6 +2239,8 @@ void do_song(int songnum)
       int subsection = (int) stb_linear_remap(i, 0, stb_arr_len(vocals), 0, stb_arr_len(structure));
       int half_subsection = (int) stb_linear_remap(i, 0, stb_arr_len(vocals), 0, 2*stb_arr_len(structure));
       int phrasetype = structure[subsection].state[0];
+
+      song_phase = stb_linear_remap(i, 0, stb_arr_len(vocals), 0, 1);
 
       //printf("%d\n", subsection);
 
@@ -2061,7 +2265,7 @@ void do_song(int songnum)
          init_instrument_modes();
       }
 
-      nlist = generate_phrase(stb_arr_len(syl));
+      nlist = generate_phrase(stb_arr_len(syl), syl);
 
       p = arrange_phrase(nlist, vocals[i].voice);
       if (i == OUTPUT_START && 0) {
@@ -2099,7 +2303,7 @@ void song2_do_song(void)
          init_instrument_modes();
       }
 
-      nlist = generate_phrase(stb_arr_len(syl));
+      nlist = generate_phrase(stb_arr_len(syl), syl);
       song2_random_chord(&a);
       do
          song2_random_chord(&b);
@@ -2124,7 +2328,7 @@ void create_music(int songnum)
       case 1: set_intensity_line(0.1, 0.3);             set_teeth( 8, 0.2,128, 0.4); break;
       case 2: set_intensity_curve(0.2, 0.6, 0.9, 0.4);  set_teeth(32, 0.2, 64, 0.3); break;
       case 3: set_intensity_line(0.3, 0.55);            set_teeth(16, 0.2, 32, 0.2); break;
-      case 4: set_intensity_line(0.5, 0.65);            set_teeth( 8, 0.2, 32, 0.3); break;
+      case 4: set_intensity_line(0.2, 0.95);            set_teeth( 8, 0.1, 16, 0.1); break;
       case 5: set_intensity_curve(0.5, 0.5, 0.9, 1.0);  set_teeth(4, 0.2, 16, 0.2);  break;
       default: assert(0);
    }
@@ -2146,24 +2350,25 @@ void do_instrument_music(int inst)
       //char **syl = vocals[i].syllables;
       voicenote *nlist = song[i]->voice[inst][0];
 
-      // C F Bb Eb Ab Db Gb
+      // C F Bb Eb Ab Db (Gb)
       // C G D A E B F#
 
       // C Db E Eb F F# G Ab A Bb B
 
       if (i == OUTPUT_START || (key_for_phrase[i] != key_for_phrase[i-1])) {
+         current_key_is_flat = 0;
          switch (key_for_phrase[i]) {
             case  0: fprintf(f, "\\key c   \\major "); break;
-            case  1: fprintf(f, "\\key des \\major "); break;
+            case  1: fprintf(f, "\\key des \\major "); current_key_is_flat = 1; break;
             case  2: fprintf(f, "\\key d   \\major "); break;
-            case  3: fprintf(f, "\\key ees \\major "); break;
+            case  3: fprintf(f, "\\key ees \\major "); current_key_is_flat = 1; break;
             case  4: fprintf(f, "\\key e   \\major "); break;
-            case  5: fprintf(f, "\\key f   \\major "); break;
+            case  5: fprintf(f, "\\key f   \\major "); current_key_is_flat = 1; break;
             case  6: fprintf(f, "\\key fis \\major "); break;
             case  7: fprintf(f, "\\key g   \\major "); break;
-            case  8: fprintf(f, "\\key aes \\major "); break;
+            case  8: fprintf(f, "\\key aes \\major "); current_key_is_flat = 1; break;
             case  9: fprintf(f, "\\key a   \\major "); break;
-            case 10: fprintf(f, "\\key bes \\major "); break;
+            case 10: fprintf(f, "\\key bes \\major "); current_key_is_flat = 1; break;
             case 11: fprintf(f, "\\key b   \\major "); break;
          }
       }
@@ -3706,7 +3911,7 @@ void process_foul(int first_free_throw)
                switch (random_nonrepeat(3)) {
                   case 0: sing(V1, "Per-son-al foul on $, but & [has|have] # team fouls, so $ will get two free throws.", foul_player,  tm,      team_fouls[tm],   who_was_fouled); break;
                   case 1: sing(V1, "$ is called with a per-son-al foul, and $ will shoot two since & [has|have] # team fouls.", foul_player,  who_was_fouled, tm, team_fouls[tm]); break;
-                  case 2: sing(V1, "Foul on the play. Per-son-al foul for $, but $ will go to the foul line.", foul_player, who_was_fouled); break;
+                  case 2: sing(V1, "Foul on the play. Per-son-al foul for $, so $ will go to the foul line.", foul_player, who_was_fouled); break;
                      break;
                   default: assert(0);
                }
@@ -5224,7 +5429,7 @@ int main(int argc, char **argv)
    remove_player_names(pbp, n);
 
    stb_srand(time(NULL));
-   //stb_srand(0);
+   stb_srand(0);
    create_teams();
 
    generate_structure(3);
