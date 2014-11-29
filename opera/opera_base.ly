@@ -85,24 +85,28 @@
       \new GrandStaff = "GrandStaff_violins" <<
         \new Staff = "Staff_violinI" {
           \set Staff.instrumentName = #"Violin I"
-          \set Staff.shortInstrumentName = #"Vln1"
+          \set Staff.shortInstrumentName = #"Vln.1"
           \violinIMusic
         }
         \new Staff = "Staff_violinII" {
-          \set Staff.instrumentName = #"Vln2"
+          \set Staff.instrumentName = #"Violin II"
+          \set Staff.shortInstrumentName = #"Vln.2"
           \violinIIMusic
         }
       >>
       \new Staff = "Staff_viola" {
-        \set Staff.instrumentName = #"Vla."
+        \set Staff.instrumentName = #"Viola"
+        \set Staff.shortInstrumentName = #"Vla."
         \violaMusic
       }
       \new Staff = "Staff_cello" {
-        \set Staff.instrumentName = #"Vc."
+        \set Staff.instrumentName = #"Cello"
+        \set Staff.shortInstrumentName = #"Vc."
         \celloMusic
       }
       \new Staff = "Staff_bass" {
-        \set Staff.instrumentName = #"D.B."
+        \set Staff.instrumentName = #"Double Bass"
+        \set Staff.shortInstrumentName = #"D.B."
         \bassMusic
       }
     >>
@@ -122,7 +126,7 @@
          ("flute" . (0 . 0.3))
          ("oboe" . (0 . 0.7))
          ("clarinet" . (0 . 0.7))
-         ("bassoon" . (0.5 . 1.0))
+         ("bassoon" . (0.3 . 0.8))
          ("french horn" . (0.1 . 0.7))
          ("trumpet" . (0.1 . 0.8))
          ("timpani" . (0.2 . 0.9))
