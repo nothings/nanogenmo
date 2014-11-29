@@ -11,7 +11,7 @@ int g_songnum;
 #define MIDDLE_C   60
 
 #define OUTPUT_START   0
-#define OUTPUT_END     32
+#define OUTPUT_END     256
 
 // TODO-ish: lyrics
 //   don't do two "with"s in a row for rebound & possession
@@ -156,6 +156,27 @@ FILE *f;
 
 #define WHOLE_NOTE    96
 
+int triplet_stage=0;
+
+void pre_duration(int duration)
+{
+   switch (duration) {
+      case WHOLE_NOTE/6:
+      case WHOLE_NOTE/12:
+         if (triplet_stage == 0)
+            fprintf(f, "\\tuplet 3/2 { ");
+         ++triplet_stage;
+   }
+}
+
+void post_duration(int duration)
+{
+   if (triplet_stage == 3) {
+      fprintf(f, "} ");
+      triplet_stage = 0;
+   }
+}
+
 void lily_print_duration(int duration)
 {
    switch (duration) {
@@ -167,6 +188,8 @@ void lily_print_duration(int duration)
       case WHOLE_NOTE*3/8: fprintf(f, "4."); break;
       case WHOLE_NOTE*3/16: fprintf(f, "8."); break;
       case WHOLE_NOTE*1/16: fprintf(f, "16"); break;
+      case WHOLE_NOTE/6:    fprintf(f, "4 "); break;
+      case WHOLE_NOTE/12:   fprintf(f, "8 "); break;
       default: assert(0);
    }
 }
@@ -250,11 +273,13 @@ enum
    D_fff,
 };
 
+
 typedef struct
 {
    int midinote[4];
    int duration;
    int volume;   // -5 .. 5
+   int melisma; // true if it's a melisma attached to previous note
 } voicenote;
 
 typedef struct
@@ -468,15 +493,133 @@ voicenote *add_rests_at_end(voicenote *phrase, int duration)
    return phrase;      
 }
 
+int allow_chromatic_down(voicenote *a, voicenote *b, voicenote *c, voicenote *d)
+{
+   if (b->midinote[0] == c->midinote[0])
+      return a->midinote[0] > b->midinote[0] && d->midinote[0] > c->midinote[0];
+   return 0;
+}
+
+int allow_chromatic_passing(voicenote *a, voicenote *b, voicenote *c, voicenote *d)
+{
+   int delta = c->midinote[0] - b->midinote[0];
+   if (abs(delta) != 2)
+      return 0;
+   
+   if (delta < 0)
+      return a->midinote[0] > b->midinote[0] && c->midinote[0] > d->midinote[0];
+   else
+      return a->midinote[0] < b->midinote[0] && c->midinote[0] < d->midinote[0];
+}
+
+int allow_triplet(voicenote *a, voicenote *b, int tm)
+{
+   if (a->duration == WHOLE_NOTE/2) {
+      if (tm != 0 && tm != WHOLE_NOTE/2)
+         return 0;
+   } else if (a->duration == WHOLE_NOTE/4) {
+      if (tm % (WHOLE_NOTE/4) != 0)
+         return 0;
+   } else
+      return 0;
+
+   return abs(a->midinote[0] - b->midinote[0]) >= 5;
+}
+
+
+int match_scale(int note)
+{
+   int i;
+   int offset=0;
+   for (offset=0; offset < 12; ++offset) {
+      int p = (note+offset) % 12;
+      for (i=0; i < 7; ++i)
+         if (scale[i] % 12 == p)
+            return (note+offset);
+      p = (note-offset) % 12;
+      for (i=0; i < 7; ++i)
+         if (scale[i] % 12 == p)
+            return note-offset;
+   }
+   assert(0);
+   return note;
+}
+
+voicenote *ornament_melody(voicenote *notes, timedchord *changes, int range_low, int range_high, uint8 *protected_notes)
+{
+   int i, tm=0;
+   voicenote *output = NULL;
+   for (i=0; i < stb_arr_len(notes); ++i) {
+      if (i >= 1 && i < stb_arr_len(notes)-1 && !protected_notes[i] && notes[i].duration >= WHOLE_NOTE/8 && notes[i].duration < WHOLE_NOTE/2) {
+         switch (random(3)) {
+            case 0:
+               if (allow_chromatic_down(&notes[i-1], &notes[i], &notes[i+1], &notes[i+2])) {
+                  voicenote n = notes[i];
+                  n.duration /= 2;
+                  stb_arr_push(output, n);
+                  n.midinote[0] -= 1;
+                  n.melisma = 1;
+                  stb_arr_push(output, n);
+               } else
+                  stb_arr_push(output, notes[i]);
+               break;
+            case 1: {
+               if (allow_chromatic_passing(&notes[i-1], &notes[i], &notes[i+1], &notes[i+2])) {
+                  voicenote n = notes[i];
+                  n.duration /= 2;
+                  stb_arr_push(output, n);
+                  n.midinote[0] = (notes[i].midinote[0] + notes[i+1].midinote[0])/2;
+                  n.melisma = 1;
+                  stb_arr_push(output, n);
+               } else
+                  stb_arr_push(output, notes[i]);
+               break;
+            }
+            case 2:
+               if (allow_triplet(&notes[i], &notes[i+1], tm)) {
+                  int delta = notes[i+1].midinote[0] - notes[i].midinote[0];
+                  int n2 = match_scale(notes[i].midinote[0] + delta*1/3);
+                  int n3 = match_scale(notes[i].midinote[0] + delta*2/3);
+                  if (n2 == n3 || n2 == notes[i].midinote[0] || n3 == notes[i+1].midinote[0]) {
+                     stb_arr_push(output, notes[i]);
+                  } else {
+                     voicenote n = notes[i];
+                     n.duration /= 3;
+                     stb_arr_push(output, n);
+                     n.melisma = 1;
+                     n.midinote[0] = n2;
+                     stb_arr_push(output, n);
+                     n.midinote[0] = n3;
+                     stb_arr_push(output, n);
+                  }
+               } else
+                  stb_arr_push(output, notes[i]);
+               break;
+            case 3:
+               stb_arr_push(output, notes[i]);
+               break;
+            default: assert(0);
+         }         
+      } else {
+         stb_arr_push(output, notes[i]);
+      }
+      tm += notes[i].duration;
+   }
+   for (i=0; i < stb_arr_len(output); ++i)
+      assert(output[i].duration > 0 && output[i].duration <= WHOLE_NOTE);
+   return output;
+}
+
 voicenote *adapt_melody(timedchord *changes, note *phrase, int range_low, int range_high, chord *final_note_chord)
 {
+   uint8 *protected_notes = NULL;
    chord cur_chord;
    int flag_newchord = 1;
    int i, n=0;
    int offset=0;
    int chord_end_time;
    int tm=0;
-   voicenote *nlist=0;
+   voicenote *nlist=0, *final;
    if (range_low < MIDDLE_C)
       offset = -12;
    cur_chord = changes[0].c;
@@ -495,6 +638,9 @@ voicenote *adapt_melody(timedchord *changes, note *phrase, int range_low, int ra
 
       if (flag_newchord) {
          sn = find_nearest_note_to_chord(sn, &cur_chord);
+         stb_arr_push(protected_notes, 1);
+      } else {
+         stb_arr_push(protected_notes, 0);
       }
 
       v.midinote[0] = midi_note_for_scale(sn, 60) + offset;
@@ -515,8 +661,13 @@ voicenote *adapt_melody(timedchord *changes, note *phrase, int range_low, int ra
       tm += phrase[i].duration;
       flag_newchord = 0;
    }
+
+   final = ornament_melody(nlist, changes, range_low, range_high, protected_notes);
+   stb_arr_free(protected_notes);
+   stb_arr_free(nlist);
+
    *final_note_chord = cur_chord;
-   return nlist;
+   return final;
 }
 
 voicenote *song2_adapt_melody(chord *start_chord, chord *end_chord, note *phrase, int range_low, int range_high)
@@ -1991,6 +2142,7 @@ void do_instrument_music(int inst)
 
    for (i=OUTPUT_START; i < OUTPUT_END && i < stb_arr_len(song); ++i) {
       int current_time = 0;
+      int in_melisma = 0;
       //char **syl = vocals[i].syllables;
       voicenote *nlist = song[i]->voice[inst][0];
 
@@ -2030,6 +2182,13 @@ void do_instrument_music(int inst)
 
       for (j=0; j < stb_arr_len(nlist); ++j) {
          int dur = nlist[j].duration;
+
+         pre_duration(dur);
+
+         if (!in_melisma &&  nlist[j].melisma)
+            fprintf(f, "( ");
+         in_melisma = nlist[j].melisma;
+
          while (dur > 0) {
             int step_time = dur;
             if (current_time + dur > WHOLE_NOTE) {
@@ -2073,6 +2232,10 @@ void do_instrument_music(int inst)
             if (dur && nlist[j].midinote[0] != 0)
                fprintf(f, " ~ ");
          }
+         if (in_melisma  && (j+1 == stb_arr_len(nlist) || !nlist[j+1].melisma))
+            fprintf(f, ") ");
+
+         post_duration(dur);
          fprintf(f, "\n");
       }
    }
@@ -2408,6 +2571,10 @@ static void close_vocal_line(void)
       } else {
          static int v;
          stb_arr_push(pending.cur_line, 0);
+         if (0 == strcmp(pending.cur_line + stb_arr_len(pending.cur_line) - 2, "_.")) {
+            stb_arr_pop(pending.cur_line);
+            stb_arr_last(pending.cur_line) = 0;
+         }
          add.voice = pending.voice;
          add.voice = v;
          v = (v+1)%3;
@@ -3767,7 +3934,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                break;
             case F_alleyoop_dunk:
                sing(V1, "% puts up an all-ey oop to $, !and he jams it in.", assist, player);
-               sing(V3, "!Wow.");
+               sing(V3, "!Wow wow.");
                sing(V2, "That was a beau-ti-ful play. $ was in a per-fect po-si-tion, and $ saw it plain as day.", player, assist);
                disable_color();
                break;
@@ -4349,10 +4516,10 @@ void free_shot(int player, int shotnum, int total_shots, int made)
 
       if (total_shots == 1) {
          if (last_shot_points == 3)
-            sing(V1, "%'s looking to add a fourth point_ ", player);
+            sing(V1, "%'s look-ing to add a fourth point_ ", player);
          else {
             assert(last_shot_points == 2);
-            sing(V1, "%'s looking to turn it into three_ ", player);
+            sing(V1, "%'s look-ing to turn it into three_ ", player);
          }
          enable_color();
          if (made)
