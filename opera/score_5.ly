@@ -2,5 +2,4 @@
 
 \include "music_5.ly"
 
-\include "opera_base.ly"
-
+\include "opera_score_base.ly"
