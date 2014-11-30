@@ -59,21 +59,21 @@ int g_songnum;
 
 /*
   scoring:
-   points for the night after scoring
-   layup/field goal/3pt/total points for the night after such events
-   layup/field goal/3pt/total points for the team after such events
-   layup/field goal/3pt/total points compare halfs for player after such events
-   layup/field goal/3pt/total points compare halfs for team after such events
-   layup/field goal/3pt/total points compare halfs for teams after such events
-   layup/field goal/3pt/total percentages for the night after such events
+  *points for the night after scoring
+  *layup/field goal/3pt/total points for the night after such events
+  *layup/field goal/3pt/total points for the team after such events
+  +layup/field goal/3pt/total points compare halfs for player after such events
+  +layup/field goal/3pt/total points compare halfs for team after such events
+  +layup/field goal/3pt/total points compare halfs for teams after such events
+  *layup/field goal/3pt/total percentages for the night after such events
    layup/field goal/3pt/total percentages for the season after such events
    layup/field goal/3pt/total results for the previous night after such events
-   1st point
-   1st layup
-   1st field goal
-   1st 3 pointer
-   1st point of the quarter
-   assists MUST be reported
+  *1st point
+  *1st layup
+  *1st field goal
+  *1st 3 pointer
+  *1st point of the quarter
+   assists
 
   free throws:
    free throw percentage for the night
@@ -2635,7 +2635,7 @@ enum
 
 char teamname[2][TEAMNAME__count][64];
 char playername[25][2][64];
-int hack_count[3][2];
+int hack_count[3][24];
 int hack_count2[20];
 
 char *place[15] =
@@ -2937,6 +2937,13 @@ void sing(int voice, char *fmt, ...)
          if (*s == '$') {
             strcpy(t, playername[n+PLAYER_OFFSET][PLAYERNAME_full ]);
             ++s;
+         } else if (s[0] == '\'' && s[1] == 's') {
+            strcpy(t, playername[n+PLAYER_OFFSET][PLAYERNAME_short]);
+            t += strlen(t);
+            if (t[-1] == 's')
+               strcpy(t, "'");
+            else
+               strcpy(t, "'s");
          } else
             strcpy(t, playername[n+PLAYER_OFFSET][PLAYERNAME_short]);
          t += strlen(t);
@@ -3354,7 +3361,7 @@ int once(int line)
    if (done[line])
       return 0;
    done[line] = 1;
-   return 0;
+   return 1;
 }
 
 int random_neverrepeat(int range, int line)
@@ -3769,9 +3776,9 @@ int take_possession(int tm)
          }
          #if 0
          if (random(100) < 50)
-            sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
+            sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @MORECOLOR
          else
-            sing(V3, "Sta-tis-tic here. This is com-pli-ca-ted. In-deed."); // @TODO
+            sing(V3, "Sta-tis-tic here. This is com-pli-ca-ted. In-deed."); // @MORECOLOR
          #endif
          game_state.position = 0;
          return 1;
@@ -3785,9 +3792,9 @@ int take_possession(int tm)
          }
          #if 0
          if (random(100) < 50)
-            sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
+            sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @MORECOLOR
          else
-            sing(V3, "Sta-tis-tic here. This is com-pli-ca-ted. In-deed."); // @TODO
+            sing(V3, "Sta-tis-tic here. This is com-pli-ca-ted. In-deed."); // @MORECOLOR
          #endif
          return 0;
       }
@@ -4222,6 +4229,12 @@ void fouled_shot(int player, int fouled_by)
    }
 }
 
+stat_streakable *SKSTAT(int player, int stat)
+{
+   return &stats[player][SG_tonight].streakable[stat];
+}
+
+
 stat_makeable *SSTAT(int player, int stat)
 {
    return &stats[player][SG_tonight].streakable[stat].game;
@@ -4232,6 +4245,125 @@ stat_plain *PSTAT(int player, int stat)
    return &stats[player][SG_tonight].plain[stat];
 }
 
+void shot_stats(int player, int type, int made)
+{
+/*
+  *points for the night after scoring
+  *layup/field goal/3pt/total points for the night after such events
+  *layup/field goal/3pt/total points for the team after such events
+  *layup/field goal/3pt/total percentages for the night after such events
+  *1st point
+  *1st layup
+  *1st field goal
+  *1st 3 pointer
+
+  +layup/field goal/3pt/total points compare halfs for player after such events
+  +layup/field goal/3pt/total points compare halfs for team after such events
+  +layup/field goal/3pt/total points compare halfs for teams after such events
+*/
+   if (SKSTAT(player_for_team[0], SS_fg)->quarter[quarter].made +
+       SKSTAT(player_for_team[1], SS_fg)->quarter[quarter].made == 1)
+   {
+      if (SKSTAT(player_for_team[0], SS_ft)->quarter[quarter].made == 0
+          && SKSTAT(player_for_team[1], SS_ft)->quarter[quarter].made == 0)
+      {
+         if (random(100) < 70) {
+            switch (quarter) {
+               case 0: sing(V3, "That's the first points of the game."); break;
+               case 1: sing(V3, "$ has the first points of the sec-ond quar-ter.", player); break;
+               case 2: sing(V3, "$ gets the second half started with # points.", player, SKSTAT(player, SS_fg)->quarter[quarter].points); break;
+               case 3: sing(V3, "# points from $ o-pens the sco-ring in the fi-nal quar-ter.", SKSTAT(player, SS_fg)->quarter[quarter].points, player); break;
+               default: assert(0);
+               break;
+            }
+            return;
+         }
+      }
+   }
+
+   if (this_event_time < 90)
+      return;
+
+   if (SSTAT(player, SS_fg)->made == 1) {
+      if (random(100) < 60 || SSTAT(player, SS_fg)->attempts == 1) {
+         if (SSTAT(player, SS_fg)->attempts > 3)
+            // 1..3
+            switch (random_nonrepeat(3)) {
+               case 0: sing(V3, "That's the first shot he's made after # misses earlier.", SSTAT(player, SS_fg)->attempts-1); return;
+               case 1: sing(V3, "That's $'s first bas-ket to-night on his #th attempt.", player, SSTAT(player, SS_fg)->attempts); return;
+               case 2: sing(V3, "On his #th try % fi-nal-ly gets the ball to go in.", SSTAT(player, SS_fg)->attempts, player); return;
+               default: assert(0);
+            }
+         else if (SSTAT(player, SS_fg)->attempts == 1) {
+            if (type == SHOT_3pt) {
+               if (once()) {
+                  sing(V3, "For $'s first shot of the night he's sunk a three point-er.", player);
+                  return;
+               }
+            } else {
+               if (once()) {
+                  sing(V3, "That's $'s first shot of the night.", player);
+                  return;
+               }
+            }
+         } else { // made 1 of 2 or 3
+            if (type == SHOT_3pt) {
+               if (once()) {
+                  sing(V3, "$'s first made shot to-night is a three point-er. He's # for # o-ver-all.", player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts);
+                  return;
+               }
+            } else {
+               switch(random_nonrepeat(5)) {
+                  default: assert(0);
+                  case 0: sing(V3, "That's $'s first bas-ket to-night.", player); break;
+                  case 1: sing(V3, "$'s first made shot here.", player); break;
+                  case 2: sing(V3, "$ is # for #.", player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+                  case 3: sing(V3, "That's the first shot $ has made.", player); break;
+                  case 4: sing(V3, "The first bas-ket from $, put-ting him at # for # so far to-night.", player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+               }
+               return;
+            }
+         }
+      }
+   }
+
+   if (SSTAT(player, SS_fg)->made == 0)
+      return; // @TODO
+
+   if (type == SHOT_3pt ? SSTAT(player, SS_f3)->attempts > 1 : SSTAT(player, SS_fg)->attempts > 1) { 
+      // ~130 times
+      ++hack_count[0][0];
+      if (random(100) < 50) {
+         if (type == SHOT_3pt) {
+            // 3..12 times if random(100) < 30 above
+            switch (random_nonrepeat(6)) {
+               case 0: sing(V3, "$ is # for # to-night for three point-ers.", player, SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts); break;
+               case 1: sing(V3, "$ is # for # for three point shots.",        player, SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts); break;
+               case 2: sing(V3, "For three points, $ is # for # to-night.",   player, SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts); break;
+               case 3: sing(V3, "$ is # for # for three points to-night."   , player, SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts); break;
+               case 4: sing(V3, "$ is # for # at three point-ers."   ,        player, SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts); break;
+               case 5: sing(V3, "For three points, $ is at # for #.",         player, SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts); break;
+            }
+            return;
+         } else {
+            // 30..50 times if random(100) < 30 above
+            switch (random_nonrepeat(6)) {
+               case 0: sing(V3, "$ is # for # to-night.",                player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+               case 1: sing(V3, "$ is # for # to-night from the field.", player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+               case 2: sing(V3, "$ has shot # for # so far.",            player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+               case 3: sing(V3, "$ has shot # for # so far to-night.",   player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+               case 4: sing(V3, "That puts $ at # for #.",               player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+               case 5: sing(V3, "That puts $ at # for # tonight.",       player, SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts); break;
+            }
+            return;
+         }
+      }
+   }
+
+   // didn't say anything
+}
+
+int wide_open, contested, drive, got_by, picked;
 void color_shot_commentary(int type, int player, int assist, int made, int blocker, int flavor, int queue)
 {
    if (queue) {
@@ -4248,68 +4380,227 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
    if (!can_do_color())
       return;
 
-   #define X() disable_color()
+   // if !made, we do color commentary in the rebound
    if (made) {
       if (random(100) < 70) {
          // V3 - stats
          switch (random_nonrepeat(5)) {
             case 0:
             case 1:
+               // @TODO variations!
                // @TODO: "he" should be player name if the did_announce_score is true
-               if (SSTAT(player, SS_fg)->made == 1) {
-                  if (SSTAT(player, SS_fg)->attempts > 3)
-                     sing(V3, "That's the first shot he's made after # misses earlier.", SSTAT(player, SS_fg)->attempts-1);
-                  else if (SSTAT(player, SS_fg)->attempts == 1)
-                     if (type == SHOT_3pt)
-                        sing(V3, "For his first shot of the night he's sunk a three point-er.");
-                     else            
-                        sing(V3, "That's his first shot of the night.");
-                  else
-                     sing(V3, "That's the first shot he's made.");
-               } else {
-                  if (type == SHOT_3pt && SSTAT(player, SS_f3)->attempts > 1) {
-                     sing(V3, "He's # for # to-night for three point-ers.", SSTAT(player,SS_f3)->made, SSTAT(player,SS_f3)->attempts);
-                  } else {
-                     sing(V3, "He's # for # to-night.", SSTAT(player,SS_fg)->made, SSTAT(player,SS_fg)->attempts);
-                  }
-               }
-               disable_color();
                break;
             case 2: {
+               // @TODO
                int stat = (type == SHOT_layup) ? SS_layup : SS_jump; 
                break;
             }
             case 3: {
+               // @TODO
                int stat = (type == SHOT_layup) ? SS_layup : SS_jump; 
                break;
             }
             case 4: {
+               // @TODO
                break;
             }
             default: assert(0);
          }
       }
 
-      if (can_do_color()) {
-         // V2 - critique
-         sing(V2, "Here's a com-ment on that play. I have a lot of o-pin-ions. I am glad to share them with you.");
+      // other status information about shot so color doesn't conflict with pbp
+      // int wide_open, contested, drive, got_by;
+      if (assist) {
+         // assisted:
+         //   layup: 2*none, reverse, 3*dunk
+         //   3pt: 17
+         //   jump: 9*none, 2*hook
+         switch (type) {
+            case SHOT_layup:
+               switch (flavor) {
+                  default: assert(0);
+                  case F_none:
+                     switch (random_neverrepeat(3)) {
+                        default: break;
+                        case 0: sing(V2, "Good work by $ and by $.", player, assist); break;
+                        case 1: sing(V2, "I did-n't think that was go-ing to go in. Cred-it to both play-ers for mak-ing it work."); break;
+                        case 2: sing(V2, "Sol-id work by both play-ers on that play."); break;
+                     }
+                     break;
+                  case F_reverse:
+                     if (once()) {
+                        sing(V2, "Good pass by $ to $ as he was head-ing under the bas-ket. And an ef-fort-less look-ing shot by $.", assist, player, player);
+                     }
+                     break;
+                  case F_dunk:
+                     switch (random_neverrepeat(3)) {
+                        default: break;
+                        case 0: sing(V2, "That was a great pass by $. He saw the o-pen man and got him the ball.", assist); break;
+                        case 1: sing(V2, "That is how the game is played. Per-fect team-work there."); break;
+                        case 2: sing(V2, "I'm not sure how $ got so o-pen, but once he was, $ played it per-fect-ly.", player, assist); break;
+                     }
+                     break;
+                  case F_alleyoop:
+                     if (once()) {
+                        sing(V2, "$ placed the ball just right for $.", assist, player);
+                     }
+                     break;
+               }
+               break;
+            case SHOT_jump :
+               switch (flavor) {
+                  default: assert(0);
+                  case F_none:
+                  case F_hook:
+                     switch (random_neverrepeat(11)) {
+                        default: break;
+                        case  0: // @TODO
+                        case  1:
+                        case  2:
+                        case  3:
+                        case  4:
+                        case  5:
+                        case  6:
+                        case  7:
+                        case  8:
+                        case  9:
+                        case 10: sing(V2, "This is a place-hol-der."); break;
+                     }
+                     break;
+               }
+               break;
+            case SHOT_3pt  : 
+               switch (random_neverrepeat(17)) {
+                  default: break;
+                  case  0: // @TODO
+                  case  1:
+                  case  2:
+                  case  3:
+                  case  4:
+                  case  5:
+                  case  6:
+                  case  7:
+                  case  8:
+                  case  9:
+                  case 10:
+                  case 12:
+                  case 13:
+                  case 14:
+                  case 15:
+                  case 16: sing(V2, "This is a place-hol-der."); break;
+               }
+               break;
+         }
+      } else {
+         // unassisted:
+         //   layup: 7*none, 3*tip, 2*running,2*putback,1*putback_dunk,1*driving,1*driving_finger_roll
+         //   3pt: 3
+         //   jump: 13*none, 1*turnaround hook, 1*hook, 1*bank, 3*fadeaway, 2*running_bank
+         switch (type) {
+            case SHOT_layup:
+               switch (flavor) {
+                  default: assert(0);
+                  case F_driving_finger_roll:
+                     break;          // has already commented on this
+                  case F_none:
+                  case F_running:
+                  case F_driving:
+                     switch (random_neverrepeat(10)) {
+                        default: break;
+                        case 0: // @TODO
+                        case 1:
+                        case 2:
+                        case 3:
+                        case 4:
+                        case 5:
+                        case 6:
+                        case 7:
+                        case 8:
+                        case 9: sing(V2, "This is a place-hol-der."); break;
+                     }
+                     break;
+                  case F_tip:
+                     switch (random_neverrepeat(3)) {
+                        default: break;
+                        case  0: // @TODO
+                        case  1:
+                        case  2: sing(V2, "This is a place-hol-der."); break;
+                     }
+                     break;
+                  case F_putback_dunk:
+                     if (once()) {
+                         // @TODO
+                     }
+                     break;
+                  case F_putback:
+                     switch (random_neverrepeat(2)) {
+                        default: break;
+                        case  0:  // @TODO
+                        case  1: sing(V2, "This is a place-hol-der."); break;
+                     }
+                     break;
+               }
+               break;
+            case SHOT_jump :
+               switch (flavor) {
+                  default: assert(0);
+                  case F_none:
+                  case F_bank:
+                  case F_fadeaway:
+                  case F_running_bank:
+                  case F_turnaround_hook:
+                  case F_hook:
+                     switch (random_neverrepeat(21)) {
+                        default: break;
+                        case  0: // @TODO
+                        case  1: sing(V2, "That was-n't his best shot, but it went in an-y-way."); break;
+                        case  2:
+                        case  3:
+                        case  4:
+                        case  5:
+                        case  6:
+                        case  7:
+                        case  8:
+                        case  9:
+                        case 10:
+                        case 11:
+                        case 12:
+                        case 13:
+                        case 14:
+                        case 15:
+                        case 16:
+                        case 17:
+                        case 18:
+                        case 19:
+                        case 20: sing(V2, "This is a place-hol-der."); break;
+                     }
+                     break;
+               }
+               break;
+            case SHOT_3pt  : 
+               switch (random_neverrepeat(3)) {
+                  default: break;
+                  case  0: // @TODO
+                  case  1:
+                  case  2: sing(V2, "This is a place-hol-der."); break;
+               }
+               break;
+         }
       }
+
    }
 
-   // "That was-n't his best shot, but it went in."
 
    color_from_queue = 0;
 
-   // @TODO all of the shot commentary!!!
-   if (made) {
-      #if 1
-      #endif
-   }
-
+   if (made)
+      shot_stats(player, type, made);
 }
 
 int suppress_rebound;
 int will_foul;
+
+int shot_type, shot_player, shot_flavor;
 
 void took_shot(int type, int player, int assist, int made, int blocker, int flavor)
 {
@@ -4332,6 +4623,16 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
       ++made_counts[flavor];
    else
       ++missed_counts[flavor];
+
+   shot_type = type;
+   shot_player = player;
+   shot_flavor = flavor;
+
+   wide_open = 0;
+   contested = 0;
+   drive = 0;
+   got_by = 0;
+   picked = 0;
 
    if (type == SHOT_layup) {
       if (assist) {
@@ -4451,7 +4752,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   switch (random_nonrepeat(6)) {
                      case 0: sing(V1, "lays it up for an eas-y two points."); break;
                      case 1: sing(V1, "lays it up and it goes right in."); break;
-                     case 2: sing(V1, "con-tes-ted shot_ the lay-up is good."); break;
+                     case 2: sing(V1, "con-tes-ted shot_ the lay-up is good."); contested=1; break;
                      case 3: sing(V1, "lays the ball up and it's good."); break;
                      case 4: sing(V1, "drops in an eas-y lay-up for two points."); break;
                      case 5: sing(V1, "and he lays it up for two."); break;
@@ -4492,14 +4793,14 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                if (flavor != F_driving && flavor != F_driving_finger_roll) {
                   any = 1;
                   switch (random_nonrepeat(8)) {
-                     case 0: sing(V1, "% pump fakes and slips by his de-fen-der_ ", player); break;
-                     case 1: sing(V1, "A nice dou-ble-move from $ to get by $_ ", player, defender(player)); break;
+                     case 0: sing(V1, "% pump fakes and slips by his de-fen-der_ ", player); got_by=1; break;
+                     case 1: sing(V1, "A nice dou-ble-move from $ to get by $_ ", player, defender(player)); got_by=1; break;
                      case 2: sing(V1, "$ gets a pick from $_ ", player, team_roster[tm][random_player(tm,player)]); break;
-                     case 3: sing(V1, "Gets by his def-end-er_ ", player, defender(player)); break;
-                     case 4: sing(V1, "% drives to the bas-ket_ ", player); break;
-                     case 5: sing(V1, "Drives to the bas-ket_ ", player); break;
-                     case 6: sing(V1, "% gets to the bas-ket_ ", player); break;
-                     case 7: sing(V1, "% works his way to the bas-ket_ ", player); break;
+                     case 3: sing(V1, "Gets by his def-end-er_ ", player, defender(player)); got_by=1; break;
+                     case 4: sing(V1, "% drives to the bas-ket_ ", player); drive=1; break;
+                     case 5: sing(V1, "Drives to the bas-ket_ ", player); drive=1; break;
+                     case 6: sing(V1, "% gets to the bas-ket_ ", player); drive=1; break;
+                     case 7: sing(V1, "% works his way to the bas-ket_ ", player); drive=1; break;
                      default: assert(0);
                   }
                }
@@ -4514,7 +4815,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                         switch (random_nonrepeat(6)) {
                            case 0: sing(V1, "lays it up for an eas-y two points."); break;
                            case 1: sing(V1, "lays it up and it goes right in."); break;
-                           case 2: sing(V1, "con-tes-ted shot_ the lay-up is good."); break;
+                           case 2: sing(V1, "con-tes-ted shot_ the lay-up is good."); contested=1; break;
                            case 3: sing(V1, "lays the ball up and it's good."); break;
                            case 4: sing(V1, "drops in an eas-y lay-up for two points."); break;
                            case 5: sing(V1, "he's wide open as he lays it up for two."); break;
@@ -4527,20 +4828,20 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                         assert(0);
                      case F_dunk:
                         switch (random_nonrepeat(3)) {
-                           case 0: sing(V1, "!is wide open and he slams it in for two."); break;
+                           case 0: sing(V1, "!is wide open and he slams it in for two."); wide_open=1; break;
                            case 1: sing(V1, "!and slams it in to the bas-ket."); break;
                            case 2: sing(V1, "!and dunks it for an easy two."); break;
                         }
                         break;
                      case F_driving:
                         switch (random_nonrepeat(2)) {
-                           case 0: sing(V1, "drives in to the basket, lays it up, it's good."); break;
-                           case 1: sing(V1, "drives to the basket and lays it in."); break;
+                           case 0: sing(V1, "drives in to the basket, lays it up, it's good."); drive=1; break;
+                           case 1: sing(V1, "drives to the basket and lays it in."); drive=1; break;
                            default: assert(0);
                         }
                         break;
                      case F_driving_finger_roll:
-                        sing(V1, "drives to the bas-ket and lays it up and in.");
+                        sing(V1, "drives to the bas-ket and lays it up and in."); drive=1;
                         sing(V2, "He used a fing-er roll there, you don't see that a lot.");
                         disable_color();
                         break;
@@ -4618,7 +4919,11 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
          switch (random_nonrepeat(7)) {
             case 0: sing(V1, "!For three_  "); break;
             case 1: sing(V1, "!% shoots for three_  ", player); break;
-            case 2: sing(V1, "!Fakes his de-fen-der and goes for three_ "); break;
+            case 2: if (assist)
+                       { sing(V1, "He's wide o-pen, goes for three_ "); wide_open=1; }
+                    else
+                       { sing(V1, "!Fakes his de-fen-der and goes for three_ "); wide_open=1; }
+                    break;
             case 3: sing(V1, "!% tries for three_ ", player); break;
             case 4: sing(V1, "!% look-ing for three_ ", player); break;
             case 5: sing(V1, "!Try-ing for three points_ "); break;
@@ -4635,8 +4940,10 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                      case 0: sing(V1, "% goes for a shot, !but it's blocked by $.", player, blocker); break;
                      case 1: sing(V1, "% goes up_ !no, it's blocked. $ with the block.", player, blocker); break;
                      case 2: sing(V1, "% fakes, shoots. $ blocks the shot.", player, blocker); break;
-                     case 3: if (once())
+                     case 3: if (once()) {
                                 sing(V1, "Off a pick by $, ", random_player(tm,player));
+                                picked=1;
+                             }
                              sing(V1, "$ takes a shot_ !$ blocks it.", player, blocker);
                              break;
                      case 4: sing(V1, "% tries a shot, !denied. Blocked by $.", player, blocker);
@@ -4655,10 +4962,22 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   } else {
                      switch(random_nonrepeat(10)) {
                         // @TODO more shot descriptions   low-priority
-                        case 0: sing(V1, "$ with the pick, $ shoots_ ", random_player(tm,player), player); break;
-                        case 1: sing(V1, "Shoots off a screen from $_ ", random_player(tm,player)); break;
-                        case 2: sing(V1, "Pump fakes and takes a shot_ "); said_shot = 1;  break;
-                        case 3: sing(V1, "$ with a wide open look_ ", player); break;
+                        case 0: if (assist)
+                                   sing(V1, "$ shoots_ ", player);
+                                else
+                                   { sing(V1, "$ with the pick, $ shoots_ ", random_player(tm,player), player); picked=1; }
+                                break;
+                        case 1: if (assist)
+                                   sing(V1, "$ shoots_ ", player);
+                                else
+                                   { sing(V1, "Shoots off a screen from $_ ", random_player(tm,player)); picked=1; }
+                                break;
+                        case 2: if (assist)
+                                   sing(V1, "$ shoots_ ", player);
+                                else
+                                   { sing(V1, "Pump fakes and takes a shot_ "); said_shot = 1; picked=1; }
+                                break;
+                        case 3: sing(V1, "$ with a wide open look_ ", player); wide_open=1; break;
                         case 4: sing(V1, "% shoots from the key_ ", player); break;
                         case 5: sing(V1, "Shoots from down low_ ", player); break;
                         case 6: sing(V1, "Fakes and shoots_ "); break;
@@ -4784,6 +5103,17 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                case 10:sing(V1, "hits the far side of the rim and drops in."); break;
                case 11:sing(V1, "hits the near side of the rim but goes in."); break;
                default: assert(0);
+            }
+         }
+      
+         if (assist) {
+            switch (random_nonrepeat(6)) {
+               case 0: sing(V1, "$ with the assist.", assist); break;
+               case 1: sing(V1, "$ with the assist.", assist); break;
+               case 2: sing(V1, "Assisted by $.", assist); break;
+               case 3: sing(V1, "$ credited with an assist.", assist); break;
+               case 4: sing(V1, "With an assist by $.", assist); break;
+               case 5: sing(V1, "$ with the assist on the play.", assist); break;
             }
          }
       } else {
@@ -5210,7 +5540,7 @@ void free_shot(int player, int shotnum, int total_shots, int made)
                case  7: break;
                case  8: break;
                case  9: break;
-               case 10: break;
+               case 10: break;  // @MORECOLOR
             }
          }
       } else {
@@ -5221,7 +5551,7 @@ void free_shot(int player, int shotnum, int total_shots, int made)
                   default: assert(0);
                   case -1: break;
                   case  0: sing(V2, "You'd like to con-vert two every trip, but some-times it just does-n't work out.");
-                  case  1: break;
+                  case  1: break;  // @MORECOLOR
                }
             } else {
                switch (random_neverrepeat(3)) { // 3
@@ -5229,7 +5559,7 @@ void free_shot(int player, int shotnum, int total_shots, int made)
                   case -1: break;
                   case  0: sing(V2, "You know your team is-n't gon-na be hap-py with you miss-ing both free throws.");
                   case  1: break;
-                  case  2: break;
+                  case  2: break;  // @MORECOLOR
                }
             }
          } else {
@@ -5242,7 +5572,7 @@ void free_shot(int player, int shotnum, int total_shots, int made)
                case  3: break;
                case  4: break;
                case  5: break;
-               case  6: break;
+               case  6: break;  // @MORECOLOR
             }
          }
       }
@@ -5279,11 +5609,7 @@ void free_shot(int player, int shotnum, int total_shots, int made)
       if (made) {
          set_tpossess(player < 0 ? TEAM_0 : TEAM_1, 0);
 
-
-         //sing(V3, "And here's some sta-tis-tics. This is com-pli-ca-ted. In-deed.");   // @TODO free throw stats
-         //if (SSTAT(player, SS_ft)->attempts == 2 && SSTAT(player, SS_ft)->made == 0) {
-
-
+         // we don't do stats here because we did stats BEFORE he shot
       } else {
          force_announce_flag = 1;
          // should be followed by an explicit rebound
@@ -5394,9 +5720,6 @@ void rebound(int team, int player)
                default :assert(0);
             }
          }
-         if (random(100) < 50)
-            sing(V2, "There's an in-ter-est-ing fact a-bout of-fen-sive re-bounds. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
-
       } else {
          if (random(100) < 40)
             sing(V1, "$ with the re-bound.", player);
@@ -5410,33 +5733,27 @@ void rebound(int team, int player)
                default: assert(0);
             }
          announce = 1;
-         if (random(100) < 50)
-            sing(V2, "I have an o-pin-ion on that play. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
-      }
-   } else if (offensive) {
-      enable_color();
-      if (random(100) < 60) {
-         sing(V1, "& get[s|] the ball back.", team);
-         if (random(100) < 50)
-            sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
-      } else {
-         switch (random_nonrepeat(3)) {
-            case 0: sing(V1, "The ball goes out of bounds. Last touched by $, so & get it back.", random_player(!team,0), team);
-                    game_state.position = 0.75;
-                    game_state.ball_alive = 0;
-                    break;
-            case 1: sing(V1, "Two play-ers from & come down with the ball.", team); break;
-            case 2: sing(V1, "It's still &'s ball.", team); break;
-            default: assert(0);
-         }
-         if (random(100) < 50)
-            sing(V2, "I have an o-pin-ion on that play. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
       }
    } else {
-      enable_color();
-      sing(V1, "& [takes|take] possession.", team);
-      if (random(100) < 50)
-         sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
+      if (offensive) {
+         enable_color();
+         if (random(100) < 60) {
+            sing(V1, "& get[s|] the ball back.", team);
+         } else {
+            switch (random_nonrepeat(3)) {
+               case 0: sing(V1, "The ball goes out of bounds. Last touched by $, so & get it back.", random_player(!team,0), team);
+                       game_state.position = 0.75;
+                       game_state.ball_alive = 0;
+                       break;
+               case 1: sing(V1, "Two play-ers from & come down with the ball.", team); break;
+               case 2: sing(V1, "It's still &'s ball.", team); break;
+               default: assert(0);
+            }
+         }
+      } else {
+         enable_color();
+         sing(V1, "& [takes|take] possession.", team);
+      }
    }
    game_state.position = (game_state.possess_team == TEAM_0 ? 1.0f : -1.0f);
    if (offensive)
@@ -5444,6 +5761,70 @@ void rebound(int team, int player)
    else
       add_plain(SP_def_rebounds, player, 1);
    add_plain(SP_rebounds, player, 1);
+
+   // color commentary and stats here
+
+   shot_stats(shot_player, shot_type, 0);
+
+   if (offensive) {
+      #if 0
+      if (random(100) < 50)
+         sing(V2, "There's an in-ter-est-ing fact a-bout of-fen-sive re-bounds. I have a lot of o-pin-ions. I am glad to share them with you."); // @MORECOLOR
+      #endif
+   } else {
+      // we know nothing about the play except that it was a miss (given the rebound)
+      // so we probably want to know if it was a layup, jump shot, 3-pointer, and
+      // comment on that here
+
+      // def rebound on:
+      //    layup: tip, dunk, putback, 5*none
+      //    3pt: 11
+      //    jump: 31*none, 3*turnaround, 2*hook, 2*bank
+      switch (shot_type) {
+         case SHOT_layup:
+            switch (shot_flavor) {
+               case F_tip: sing(V2, "$ had an ea-sy op-por-tun-i-ty there.", shot_player); break;
+               case F_dunk: break; // this has already been commented on
+               case F_putback: sing(V2, "$ thought he had that.", shot_player); break;
+               case F_none:
+                  switch (random_neverrepeat(5)) {
+                     default: break;
+                     case 0:  sing(V2, "That's not the kind of shot you ex-pect $ to miss.", shot_player); break;
+                     case 1:  sing(V2, "Sol-id de-fense on that play."); break;
+                     case 2:  sing(V2, "You know, you're not go-ing to win games if you can't lay that in."); break;
+                     case 3:  sing(V2, "$ drove strong but some-times that is-n't e-nough.", shot_player); break;
+                     case 4:  sing(V2, "You've got-ta give cred-it to the de-fen-ders there."); break;
+                  }
+                  break;
+            }
+            break;
+         case SHOT_jump :
+            switch (random_neverrepeat(31)) {
+               case 0:  sing(V2, "That's not a shot you'd think $ would miss.", shot_player); break;
+               case 1:  sing(V2, "% was wide o-pen there; you could-n't ask for a bet-ter look.", shot_player); break;
+               case 2:  sing(V2, "That would have been a tough shot to make."); break;
+               case 3:  sing(V2, "The de-fen-der was in his face so it's no sur-prise he could-n't land that."); break;
+               case 4:  sing(V2, "You real-ly should-n't miss a wide o-pen look like that."); break;
+               case 5:  sing(V2, "I think he rushed that shot."); break;
+               case 6:  sing(V2, "Good job by the de-fen-der get-ting a hand in his face."); break;
+               case 7:  sing(V2, "With the hand in his face % did-n't have much chance there.", shot_player); break;
+               // @TODO more
+               default: break;
+            }
+            break;
+         case SHOT_3pt  : {
+            switch (random_neverrepeat(11)) {
+               default: break;
+               case 0:  sing(V2, "That was a tough shot."); break;
+               case 1:  sing(V2, "The de-fense was no-where near %, but I guess we know why.", shot_player); break;
+               // @TODO more
+            }
+            break;
+         }
+      }
+   }
+
+   tpossess(team, announce);
 
    if (player) {
       // don't do game stats until later
@@ -5520,9 +5901,6 @@ void rebound(int team, int player)
       }
    }
 
-
-   tpossess(team, announce);
-
    game_state.current_time = this_event_time;
    game_state.possess_action_time = this_event_time;
    game_state.possess_player = player;
@@ -5544,6 +5922,7 @@ void turnover(int type, int team, int player, int stealer)
    run_play(run_to, team < 0 ? -0.6f : 0.6f, this_event_time);
    enable_color();
    if (stealer) {
+      int multi;
       // ~10
       switch (random_nonrepeat(10)) {
          case 0: sing(V1, "$ steals the ball from $.", stealer, player); break;
@@ -5557,9 +5936,25 @@ void turnover(int type, int team, int player, int stealer)
          case 8: sing(V1, "And $ with the steal.", stealer); break;
          case 9: sing(V1, "$ gets a steal.", stealer); break;
       }
-      if (random(100) < 50)
-         sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
 
+      if (PSTAT(stealer, SP_steals)->game == 1)
+         multi = random_neverrepeat(5);
+      else
+         multi = -1;
+
+      if (multi >= 0 && multi <= 1)
+         switch (multi) {
+            case 0: sing(V2, "A-noth-er steal by $, he's own-ing the court to-day.", stealer); break;
+            case 1: sing(V2, "% [is|are] go-ing to have to do some-thing a-bout his steals.", team); break;
+         }
+      else
+         switch (random_neverrepeat(10)) {
+            default: break;
+            case 0: sing(V2, "Great move by $ there.", stealer); break;
+            case 1: sing(V2, "$ left him-self o-pen to that.", player); break;
+            case 2: sing(V2, "$ just got right on that ball.", stealer); break;
+            case 3: sing(V2, "$ makes it look so ea-sy.", stealer); break;
+         }
    } else {
       ++hack_count2[type];
       switch (type) {
@@ -5570,6 +5965,13 @@ void turnover(int type, int team, int player, int stealer)
                case 2: sing(V1, "And there's the call. Tra-vel-ing.", player); break;
                default: assert(0);
             }
+            switch (random_neverrepeat(4)) {
+               default: break;
+               case 0: sing(V2, "I'm not sure a-bout that call."); break;
+               case 1: sing(V2, "Not a good move on his part."); break;
+               case 2: break;
+               case 3: break;
+            }
             break;
          case TURNOVER_badpass:        // 3
             switch (random_nonrepeat(3)) {
@@ -5577,6 +5979,12 @@ void turnover(int type, int team, int player, int stealer)
                case 1: sing(V1, "$ throws to $ but he's off the mark and it goes out of bounds.", player, random_player(team,player)); break;
                case 2: sing(V1, "$ look-ing for $ but throws it out of bounds.", player, random_player(team,player)); break;
                default: assert(0);
+            }
+            switch (random_neverrepeat(3)) {
+               default: break;
+               case 0: sing(V2, "I'm not sure what $ was think-ing there.", player); break;
+               case 1: sing(V2, "That was not a good choice on his part."); break;
+               case 2: sing(V2, "Good job by the de-fen-der there forc-ing that turn-o-ver."); break;
             }
             break;
          case TURNOVER_foul:           // 2
@@ -5596,8 +6004,6 @@ void turnover(int type, int team, int player, int stealer)
             sing(V1, "And there's a whis-tle. Three sec-ond vi-o-la-tion by $.", player);
             break;
       }
-      if (random(100) < 50)
-         sing(V2, "O-pin-ion here. I have a lot of o-pin-ions. I am glad to share them with you."); // @TODO
    }
    add_plain(SP_turnovers, player , 1);
    add_plain(SP_steals   , stealer, 1);
@@ -5779,7 +6185,7 @@ static void process_event(char *text)
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_running);
          assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Running Bank shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
-         took_shot(SHOT_jump, v[0], assist, 1, blocker, F_running_bank);
+         took_shot(SHOT_jump, v[0], assist, 1, blocker, F_running_bank); // is this really a jump shot, or is it a layup ?!?
          assert(stats[v[0]][0].streakable[SS_total].game.points == v[1]);
       } else if (3 == sscanf(text, "#%d Putback Layup Shot: Made (%d PTS) %d", v+0,v+1, v+8)) {
          took_shot(SHOT_layup, v[0], assist, 1, blocker, F_putback);
