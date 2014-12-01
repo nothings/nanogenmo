@@ -10,8 +10,8 @@ int g_songnum;
 
 #define MIDDLE_C   60
 
-#define OUTPUT_START   230
-#define OUTPUT_END     2000
+#define OUTPUT_START   0
+#define OUTPUT_END     1200
 
 // TODO-ish: lyrics
 //   don't do two "with"s in a row for rebound & possession
@@ -1030,7 +1030,7 @@ int midi_note_for_full_scale(int note)
 }
 
 
-voicenote *make_chord_voice(timedchord *c, int low_range, int high_range, int vm, int inst)
+voicenote *make_chord_voice(timedchord *c, int low_range, int high_range, int vm, int inst, timedchord *corn)
 {
    char *arp = instrument_arp[inst];
    char *arp_loop = arp ? strchr(arp, ':') + 1 : NULL;
@@ -1050,7 +1050,8 @@ voicenote *make_chord_voice(timedchord *c, int low_range, int high_range, int vm
          arpstart = arp[1] - '0';
       else
          arpstart = arp[0] - '0';
-   }
+   } else
+      c = corn;
 
    // pick initial pitches
 
@@ -1258,7 +1259,7 @@ int find_final_chord(chord *end_chord, voicenote *phrase)
    return final_chord;
 }
 
-timedchord *make_timedchords(int final_chord_time, int total_time, chord *final_chord)
+timedchord *make_timedchords(int final_chord_time, int total_time, chord *final_chord, chord *first_chord)
 {
    int tm=0, first=1;
 
@@ -1267,7 +1268,7 @@ timedchord *make_timedchords(int final_chord_time, int total_time, chord *final_
 
    chord a,b, *start_chord = &a, *end_chord = &b;
 
-   random_chord(&a);
+   a = *first_chord;
    do
       random_chord(&b);
    while (a.scalenote[0] == b.scalenote[0] && a.scalenote[1] == b.scalenote[1]);
@@ -1279,7 +1280,7 @@ timedchord *make_timedchords(int final_chord_time, int total_time, chord *final_
    //final_chord_time = (final_chord_time + (align-1)) / align * align;
 
    if (final_chord_time % WHOLE_NOTE <= WHOLE_NOTE / 2 && final_chord_time >= WHOLE_NOTE) {
-      if (random(100) < 85)
+      if (random(100) < 95)
          final_chord_time -= final_chord_time % WHOLE_NOTE;
    }
 
@@ -1426,12 +1427,12 @@ enum
 
 int arpeggio_chance[6][5] =
 {
-   { 0,  0,  60,  30, 0, },
+   { 0,  0,  60,  15, 0, },
    { 0,  0,  60,  30, 0, },
    { 0,  0,  60,  30, 0, },   // song3
    { 0,  0,  60,  30, 0, },
    { 0, 50, 100, 100, 0, },   // song5
-   { 0,  0,  60,  30, 0, },
+   { 0,  0,  60,  50, 0, },
 };
 
 
@@ -1507,6 +1508,7 @@ int instrument_voice[I__count];
 
 #define NUM_PARTS  4
 int part_mode[NUM_PARTS];
+int part_orn[NUM_PARTS];
 int num_parts;
 
 int pattern2[3];
@@ -1587,13 +1589,19 @@ int song3_random_mode(void)
    return MODE_sixteenths;
 }
 
+int song_orn_max[6] = { 50, 40, 100, 50, 100, 33 };
+//int song_orn_max[6] = { 33,33,33,33,33,33 };
+
+#define NUM_ORNAMENTS_PER_SECTION  8
+int section_orn[NUM_ORNAMENTS_PER_SECTION];
+
 void set_parts(void)
 {
    int likelihood = 30 + (int) (60*cur_intensity);
    int n = 1, i, j;
 
    memset(part_pattern, 0, sizeof(part_pattern));
-   if (g_songnum == SONG4) {
+   if (g_songnum == SONG2) {
       for (i=0; i < NUM_PARTS; ++i)
          part_pattern[i] = random(3);
    }
@@ -1629,7 +1637,12 @@ void set_parts(void)
       part_mode[i] = r;
    }
 
-   if (g_songnum == SONG4) {
+   for (i=0; i < n; ++i) {
+      // meaningful values are 19..33
+      part_orn[i] = section_orn[random(NUM_ORNAMENTS_PER_SECTION)];
+   }
+
+   if (g_songnum == SONG2) {
       for (i=0; i < n; ++i) {
          if (random(100) < likelihood)
             part_mode[i] = MODE_pattern;
@@ -1694,6 +1707,7 @@ int swap_violin_parts(void)
 }
 
 float song_phase;
+float section_arpeggio_modifier = 1.0;
 
 int arp_phase_shift_chance(void)
 {
@@ -1819,7 +1833,7 @@ void init_instrument_modes(void)
       }
    }
 
-   if (g_songnum != SONG5 && g_songnum == SONG4) {
+   if (g_songnum != SONG5 && g_songnum == SONG2) {
       stb_shuffle(ilist, stb_arr_len(ilist), sizeof(ilist[0]), stb_rand());
 
       k = 0;
@@ -1871,9 +1885,9 @@ void init_instrument_modes(void)
 
    for (i=0; i < I__count; ++i) {
       instrument_arp[i] = NULL;
-      if (0 && instrument_part[i] >= 0) { // @TODO
+      if (instrument_part[i] >= 0) {
          int p = instrument_part[i];
-         if (random(100) < arpeggio_chance[g_songnum][part_mode[p]]) {
+         if (random(100) < arpeggio_chance[g_songnum][part_mode[p]] * section_arpeggio_modifier) {
             instrument_arp[i] = part_arp[p];
             if (g_songnum != SONG5 && is_part_sixteenths(p)) {
                instrument_arp[i] = fix_sixteenths_arp(instrument_arp[i]);
@@ -1938,10 +1952,13 @@ int count_repeated_durations(timedchord *part, int note_num, int step)
 int find_last_note(timedchord *part, int note_num)
 {
    int tm = 0, i;
-   for (i=note_num; tm < WHOLE_NOTE; ++i)
+   for (i=note_num; tm < WHOLE_NOTE; ++i) {
       tm += part[i].duration;
+   }
    return i-1;
 }
+
+chord next_phrase_chord;
 
 enum {
    OW_every_measure,
@@ -1949,31 +1966,12 @@ enum {
    OW_before_chord_change,
 };
 
-typedef struct
+int is_same_chord(chord *a, chord *b)
 {
-   int mode;
-   int param;
-   int when;
-} part_ornamentation;
-
-int is_same_chord(timedchord *a, timedchord *b)
-{
-   assert(a->c.scalenote[0] >= 0);
-   assert(b->c.scalenote[0] >= 0);
-   return 0 == memcmp(a->c.scalenote, b->c.scalenote, sizeof(a->c.scalenote));
+   assert(a->scalenote[0] >= 0);
+   assert(b->scalenote[0] >= 0);
+   return 0 == memcmp(a->scalenote, b->scalenote, sizeof(a->scalenote));
 }
-
-enum
-{
-   OM_scale_up,
-   OM_scale_down,
-   OM_step_up,
-   OM_step_down,
-   OM_from_above,
-   OM_from_below,
-   OM_end_trans,
-};
-
 
 int is_ornamentation_when_true(timedchord *part, int i, int when, int final_added_measures)
 {
@@ -1996,14 +1994,14 @@ int is_ornamentation_when_true(timedchord *part, int i, int when, int final_adde
          int tm = part[i].duration;
          for (j=i+1; j < stb_arr_len(part) && tm < WHOLE_NOTE; ++j) {
             if (part[j].c.scalenote[0] >= 0) {
-               if (!is_same_chord(&part[i], &part[j]))
+               if (!is_same_chord(&part[i].c, &part[j].c))
                   return 0;
             }
             tm += part[j].duration;
          }
          if (j == stb_arr_len(part))
-            return 1;
-         return !is_same_chord(&part[i], &part[j]);
+            return is_same_chord(&part[i].c, &next_phrase_chord);
+         return !is_same_chord(&part[i].c, &part[j].c);
          break;
       }
       case OW_after_chord_change :
@@ -2012,11 +2010,103 @@ int is_ornamentation_when_true(timedchord *part, int i, int when, int final_adde
          for (j=i-1; j >= 0; --j) {
             if (part[j].c.scalenote[0] < 0)
                continue;
-            return !is_same_chord(&part[i], &part[j]);
+            return !is_same_chord(&part[i].c, &part[j].c);
          }
          return 0;
       default: assert(0); return 0;
    }
+}
+
+typedef struct
+{
+   int mode;
+   int param;
+   int when;
+} ornamentation_param;
+
+enum
+{
+   OM_none,
+   OM_scale_up,
+   OM_scale_down,
+   OM_step_up,
+   OM_step_down,
+   OM_from_above,
+   OM_from_below,
+   OM_end_trans,
+};
+
+ornamentation_param mpo(int mode, int param, int when)
+{
+   ornamentation_param po;
+   po.mode = mode;
+   po.param = param;
+   po.when = when;
+   return po;
+}
+
+#define SAFE_PITCH(x)  ((x)+24)
+
+ornamentation_param get_ornamentation_param(int ornamentation_number, int duration, int end_duration)
+{
+   if (ornamentation_number < 20) {
+      if (end_duration == WHOLE_NOTE/8) {
+         switch (ornamentation_number) {
+            case 14: return mpo(  OM_end_trans, 2, OW_before_chord_change);
+            case 15: return mpo(  OM_end_trans, 2, OW_before_chord_change);
+            case 16: return mpo(  OM_end_trans, 1, OW_before_chord_change);
+            case 17: return mpo(  OM_end_trans, 1, OW_before_chord_change);
+            case 18: return mpo(  OM_end_trans, 4, OW_every_measure);
+            case 19: return mpo(  OM_end_trans, 8, OW_every_measure);
+         }
+      } else if (end_duration == WHOLE_NOTE/16) {
+         switch (ornamentation_number) {
+            case 14: return mpo(  OM_end_trans, 2, OW_before_chord_change);
+            case 15: return mpo(  OM_end_trans, 4, OW_before_chord_change);
+            case 16: return mpo(  OM_end_trans, 6, OW_before_chord_change);
+            case 17: return mpo(  OM_end_trans, 8, OW_before_chord_change);
+            case 18: return mpo(  OM_end_trans, 4, OW_every_measure);
+            case 19: return mpo(  OM_end_trans, 8, OW_every_measure);
+         }
+      }
+   } else {
+      if (duration == WHOLE_NOTE/8) {
+         switch (ornamentation_number) {
+            case 20: return mpo( OM_scale_up  , 4, OW_after_chord_change);
+            case 21: return mpo( OM_scale_up  , 4, OW_every_measure);
+            case 22: return mpo( OM_scale_down, 4, OW_after_chord_change);
+            case 23: return mpo( OM_scale_down, 4, OW_every_measure);
+            case 24: return mpo( OM_scale_up  , 8, OW_after_chord_change);
+            case 25: return mpo( OM_scale_up  , 8, OW_every_measure);
+            case 26: return mpo( OM_scale_down, 8, OW_after_chord_change);
+            case 27: return mpo( OM_scale_down, 8, OW_every_measure);
+
+            case 28: return mpo( OM_step_up   , 0, OW_after_chord_change);
+            case 29: return mpo( OM_step_down , 0, OW_after_chord_change);
+
+            case 30: return mpo( OM_from_above, 0, OW_after_chord_change);
+            case 31: return mpo( OM_from_below, 0, OW_after_chord_change);
+         }
+      } else {
+         switch (ornamentation_number) {
+            case 20: return mpo( OM_scale_up  , 4, OW_after_chord_change);
+            case 21: return mpo( OM_scale_up  , 4, OW_every_measure);
+            case 22: return mpo( OM_scale_down, 4, OW_after_chord_change);
+            case 23: return mpo( OM_scale_down, 4, OW_every_measure);
+            case 24: return mpo( OM_scale_up  , 8, OW_after_chord_change);
+            case 25: return mpo( OM_scale_up  , 8, OW_every_measure);
+            case 26: return mpo( OM_scale_down, 8, OW_after_chord_change);
+            case 27: return mpo( OM_scale_down, 8, OW_every_measure);
+            case 28: return mpo( OM_scale_up  ,13, OW_after_chord_change);
+            case 29: return mpo( OM_scale_up  ,13, OW_every_measure);
+            case 30: return mpo( OM_scale_down,13, OW_after_chord_change);
+            case 31: return mpo( OM_scale_down,13, OW_every_measure);
+            case 32: return mpo( OM_step_up   , 0, OW_after_chord_change);
+            case 33: return mpo( OM_step_down , 0, OW_after_chord_change);
+         }
+      }
+   }
+   return mpo(OM_none,0,0);
 }
 
 timedchord *ornament_part(timedchord *part, int partnum, int final_added_measures)
@@ -2024,13 +2114,8 @@ timedchord *ornament_part(timedchord *part, int partnum, int final_added_measure
    int at_change = 1;
    int tm = 0;
    int i, last_tm = WHOLE_NOTE-1;
-   part_ornamentation po;
    timedchord *output = NULL;
    int *measure_start = NULL;
-
-   po.mode = random(6);
-   po.param = random_range(3,8);
-   po.when = random(3);
 
    for (i=0; i < stb_arr_len(part); ++i) {
       if (tm % WHOLE_NOTE < last_tm % WHOLE_NOTE) {
@@ -2043,19 +2128,23 @@ timedchord *ornament_part(timedchord *part, int partnum, int final_added_measure
 
    for (i=0; i < stb_arr_len(part); ++i) {
       timedchord tc = part[i];
-      if (tc.c.scalenote[0] >= 0) tc.c.scalenote[0] += 12;
-      if (tc.c.scalenote[1] >= 0) tc.c.scalenote[1] += 12;
-      if (tc.c.scalenote[2] >= 0) tc.c.scalenote[2] += 12;
+      if (tc.c.scalenote[0] >= 0) tc.c.scalenote[0] = SAFE_PITCH(tc.c.scalenote[0]);
+      if (tc.c.scalenote[1] >= 0) tc.c.scalenote[1] = SAFE_PITCH(tc.c.scalenote[1]);
+      if (tc.c.scalenote[2] >= 0) tc.c.scalenote[2] = SAFE_PITCH(tc.c.scalenote[2]);
       stb_arr_push(output, tc);
    }
 
    for (i=0; i < stb_arr_len(measure_start); ++i) {
       int start_note = measure_start[i];
-      if (is_ornamentation_when_true(part, start_note, po.when, final_added_measures)) {
-         int end_note   = find_last_note(part, measure_start[i]);
-         int start_count = count_repeated_durations(part, start_note,  1);
-         int end_count   = count_repeated_durations(part, end_note  , -1);
-         int whole_measure = (start_note+start_count == end_note+1);
+      int end_note   = find_last_note(part, measure_start[i]);
+      int start_count = count_repeated_durations(part, start_note,  1);
+      int end_count   = count_repeated_durations(part, end_note  , -1);
+      int whole_measure = (start_note+start_count == end_note+1);
+
+      ornamentation_param po;
+      po = get_ornamentation_param(part_orn[partnum], part[start_note].duration, end_count ? part[end_note].duration : 0);
+
+      if (po.mode != OM_none && is_ornamentation_when_true(part, start_note, po.when, final_added_measures)) {
 
          if (whole_measure)
             assert(start_count == end_count);
@@ -2066,6 +2155,8 @@ timedchord *ornament_part(timedchord *part, int partnum, int final_added_measure
             if (start_count > po.param) start_count = po.param;
             if (end_count   > po.param)   end_count = po.param;
             switch (po.mode) {
+               case OM_none:
+                  break;
                case OM_scale_up: {
                   int i;
                   for (i=0; i < start_count; ++i) {
@@ -2116,6 +2207,31 @@ timedchord *ornament_part(timedchord *part, int partnum, int final_added_measure
                   }
                   break;
                }
+               case OM_end_trans: {
+                  int j,k;
+                  if (end_count) {
+                     for (j=0; j < 3; ++j) {
+                        int prev_note = SAFE_PITCH(part[end_note].c.scalenote[j]);
+                        int next_note =
+                           (i == stb_arr_len(measure_start)-1 ? SAFE_PITCH(next_phrase_chord.scalenote[j])
+                                                              : SAFE_PITCH(part[measure_start[i+1]].c.scalenote[j]));
+                        if (i != stb_arr_len(measure_start)-1)
+                           assert(measure_start[i+1] == end_note+1);
+                        if (prev_note != next_note) {
+                           int tlen = abs(po.param), dir;
+                           dir = (prev_note < next_note) ? 1 : -1;
+                           if (end_count < tlen)
+                              tlen = end_count;
+                           if (po.param > 0)
+                              if (abs(prev_note - next_note) < tlen)
+                                 tlen = abs(prev_note - next_note);
+                           for (k=0; k < tlen; ++k)
+                              output[end_note-k].c.scalenote[j] = next_note - (k+1) * dir;
+                        }
+                     }
+                  }
+                  break;
+               }
             }
          }
       }
@@ -2140,7 +2256,7 @@ int should_ornament_part(int part)
    return 0;
 }
 
-timedchord *play_against_timedchords(timedchord *changes, int total_time, int part, int final_added_measures)
+timedchord *play_against_timedchords(timedchord *changes, int total_time, int part, int final_added_measures, timedchord **ornamented)
 {
    int stepsize;
    char *pattern = pattern_for_part(part);
@@ -2191,11 +2307,11 @@ timedchord *play_against_timedchords(timedchord *changes, int total_time, int pa
    }
    stb_arr_free(times);
 
-   if (should_ornament_part(part)) {
+   if (g_songnum != SONG5 && should_ornament_part(part)) {
       final = ornament_part(tc, part, final_added_measures);
-      stb_arr_free(tc);
-      tc = final;
-   }
+      *ornamented = final;
+   } else
+      *ornamented = tc;
    return tc;
 }
 
@@ -2251,7 +2367,7 @@ arranged_phrase *arrange_phrase(note *phrase, int soloist, int last_phrase)
    int duration, goal, fc, desired_chord_time, i;
    int final_added_measures = 0;
    chord last_note_chord;
-   timedchord *tc, *changes, **plist = NULL;
+   timedchord *tc, *changes, **plist = NULL, **plisto = NULL;
    arranged_phrase *p = malloc(sizeof(*p));
    memset(p,0,sizeof(*p));
 
@@ -2262,28 +2378,34 @@ arranged_phrase *arrange_phrase(note *phrase, int soloist, int last_phrase)
       final_added_measures = random_range(1,6);
    goal += final_added_measures * WHOLE_NOTE;
 
-   changes = make_timedchords(duration, goal, &last_note_chord);
+   changes = make_timedchords(duration, goal, &last_note_chord, &next_phrase_chord);
+
+   random_chord(&next_phrase_chord);
 
    p->voice[soloist][0] = adapt_melody(changes, phrase, range[soloist][0], range[soloist][1], &last_note_chord);
    fc = find_final_chord(&last_note_chord, p->voice[soloist][0]);
 
-   desired_chord_time = phrase_duration(phrase, fc);
+   if (g_songnum != SONG1) {
+      desired_chord_time = phrase_duration(phrase, fc);
 
-   {
-      int i = stb_arr_len(changes);
-      int end_chord_time = timedchord_duration(changes, i-1);
-      int move_chord_time = desired_chord_time - end_chord_time;
-      if (changes[i-2].duration + move_chord_time > 0) {
-         changes[i-2].duration += move_chord_time;
-         changes[i-1].duration -= move_chord_time;
+      {
+         int i = stb_arr_len(changes);
+         int end_chord_time = timedchord_duration(changes, i-1);
+         int move_chord_time = desired_chord_time - end_chord_time;
+         if (changes[i-2].duration + move_chord_time > 0) {
+            changes[i-2].duration += move_chord_time;
+            changes[i-1].duration -= move_chord_time;
+         }
       }
    }
 
    p->voice[soloist][0] = add_rests_at_end(p->voice[soloist][0], goal-duration);
 
    for (i=0; i < num_parts; ++i) {
-      timedchord *part = play_against_timedchords(changes, goal, i, final_added_measures);
+      timedchord *opart;
+      timedchord *part = play_against_timedchords(changes, goal, i, final_added_measures, &opart);
       stb_arr_push(plist, part);
+      stb_arr_push(plisto, opart);
    }
 
    for (i=I_piano; i < I__count; ++i) {
@@ -2295,7 +2417,7 @@ arranged_phrase *arrange_phrase(note *phrase, int soloist, int last_phrase)
          instr = i;
          if (i == 8)
             i=i;
-         p->voice[i][0] = make_chord_voice(tc, range[i][0], range[i][1], instrument_voice[i], i);
+         p->voice[i][0] = make_chord_voice(tc, range[i][0], range[i][1], instrument_voice[i], i, plisto[part]);
       }
    }
    stb_arr_free(plist);
@@ -2518,7 +2640,9 @@ typedef struct
 {
    int key;
    char *arps[4];
+   int ornamentation[NUM_ORNAMENTS_PER_SECTION];
 } section_info;
+
 
 section_info    section_config[1024];
 subsection_info phrase_config[1024];
@@ -2565,7 +2689,7 @@ int find_structure_for_structure(structure_desc *structure, int find_index, int 
 int *key_for_phrase;
 void do_song(int songnum)
 {
-   int SONG2_NUM_CHANGES=1;
+   int SONG4_NUM_CHANGES=1;
    int i,j,k, num_structure=0, num_structure2=0;
    int last_phrasetype = -1;
    int last_subsection = -1;
@@ -2574,6 +2698,8 @@ void do_song(int songnum)
    int keylist[4];
    int num_song_arps=0;
    int use_arp[6][32] = { 0 };
+   int ornament_list[16];
+   int simple_keys[2];
 
    structure_desc *structure;
 
@@ -2583,6 +2709,16 @@ void do_song(int songnum)
    };
 
    key_for_phrase = NULL;
+
+   // pick a key with at most 3 #/b
+   simple_keys[0] = (random_range(-3,3) * 7) % 12;
+
+   // go 3,1,-1,-3 steps around the circle of fifths
+   simple_keys[1] = (simple_keys[0] + (random_range(0,3)*2 - 3)*7) % 12;
+
+   for (i=0; i < 2; ++i)
+      if (simple_keys[i] < 0)
+         simple_keys[i] += 12;
 
    switch (songnum) {
       case 4:
@@ -2617,8 +2753,8 @@ void do_song(int songnum)
    assert(stb_arr_len(structure) <= stb_arr_len(vocals)/2);
 
 
-   if (songnum == SONG2) {
-      SONG2_NUM_CHANGES = random_range(15,30);
+   if (songnum == SONG4) {
+      SONG4_NUM_CHANGES = random_range(15,30);
       //assert(stb_arr_len(vocals) > 80*2);
    }
 
@@ -2654,7 +2790,14 @@ void do_song(int songnum)
       keylist[i] = k;
    }
 
+   for (i=0; i < 16; ++i)
+      ornament_list[i] = random_range(19, song_orn_max[songnum]);
+
    for (i=0; i <= num_structure2; ++i) {
+      int j;
+      for (j=0; j < NUM_ORNAMENTS_PER_SECTION; ++j) {
+         section_config[i].ornamentation[j] = ornament_list[random(16)];
+      }
       if (songnum == 4) {
          int tab0,tab1;
          if (i == 0) {
@@ -2705,6 +2848,8 @@ void do_song(int songnum)
             phrase_config[i].arp[j] = song_arp_table[random(num_song_arps)];
    }
 
+   random_chord(&next_phrase_chord); // @TODO start & end on same chord
+
    for (i=0; i < stb_arr_len(vocals); ++i) {
       char **syl = vocals[i].syllables;
       arranged_phrase *p;
@@ -2715,6 +2860,7 @@ void do_song(int songnum)
 
       song_phase = stb_linear_remap(i, 0, stb_arr_len(vocals), 0, 1);
 
+
       //printf("%d\n", subsection);
 
       cur_section = &phrase_config[phrasetype];
@@ -2723,9 +2869,34 @@ void do_song(int songnum)
 
       key = section_config[structure[subsection].state[1]].key;
 
-      if (i != 0 && songnum == SONG2) {
-         if ((int) stb_linear_remap(i  ,0,stb_arr_len(vocals),0,SONG2_NUM_CHANGES) ==
-             (int) stb_linear_remap(i-1,0,stb_arr_len(vocals),0,SONG2_NUM_CHANGES)) {
+      if (songnum != SONG3 && songnum != SONG5 && songnum != SONG2) {
+         float f = (float) i / stb_arr_len(vocals), t;
+         f *= 3;
+         t = f;
+         if (t > 1)
+            t = t-f;
+         if (t < 0)
+            t = -f;
+         assert(t >= 0 && t <= 1.01);
+         if (f > 2)
+            t = stb_lerp(t, 0.5, 0.75);
+         else
+            t = stb_lerp(t, 0.5, 1.0);
+         section_arpeggio_modifier = t;
+      } else
+         section_arpeggio_modifier = 1;
+
+      if (songnum == SONG1 || songnum == SONG6) {
+         key = simple_keys[0];
+         if (i > stb_arr_len(vocals)/4 && i < stb_arr_len(vocals)*3/4)
+            key = simple_keys[1];
+      }
+
+      memcpy(section_orn, section_config[structure[subsection].state[1]].ornamentation, sizeof(section_orn));
+
+      if (i != 0 && songnum == SONG4) {
+         if ((int) stb_linear_remap(i  ,0,stb_arr_len(vocals),0,SONG4_NUM_CHANGES) ==
+             (int) stb_linear_remap(i-1,0,stb_arr_len(vocals),0,SONG4_NUM_CHANGES)) {
             key = exotic_compatible_key(last_key, -1);
          }
       }
@@ -2802,9 +2973,9 @@ void create_music(int songnum)
 
    switch (songnum) {
       case SONG1: set_intensity_line(0.0, 0.25);            set_teeth(16, 0.2, 64, 0.2); break;
-      case SONG2: set_intensity_line(0.1, 0.3);             set_teeth( 8, 0.2,128, 0.4); break;
+      case SONG4: set_intensity_line(0.1, 0.3);             set_teeth( 8, 0.2,128, 0.4); break;
       case SONG3: set_intensity_curve(0.2, 0.6, 0.9, 0.4);  set_teeth(32, 0.2, 64, 0.3); break;
-      case SONG4: set_intensity_line(0.5, 0.95);            set_teeth(16, 0.2, 32, 0.2); break;
+      case SONG2: set_intensity_line(0.5, 0.95);            set_teeth(16, 0.2, 32, 0.2); break;
       case SONG5: set_intensity_line(0.2, 0.95);            set_teeth( 8, 0.1, 16, 0.1); break;
       case SONG6: set_intensity_curve(0.5, 0.5, 0.9, 1.0);  set_teeth(4, 0.2, 16, 0.2);  break;
       default: assert(0);
@@ -3224,8 +3395,8 @@ int last_voice;
 char *voicename[] =
 {
    "Soprano",
-   "Bass",
    "Mezzo",
+   "Bass",
 };
 
 int last_player=0;
@@ -3266,20 +3437,17 @@ static void close_vocal_line(void)
       if (stb_arr_len(pending.cur_line) == 1 && pending.cur_line[0] == '.') {
          i=0;
       } else {
-         static int v;
          stb_arr_push(pending.cur_line, 0);
          if (0 == strcmp(pending.cur_line + stb_arr_len(pending.cur_line) - 2, "_.")) {
             stb_arr_pop(pending.cur_line);
             stb_arr_last(pending.cur_line) = 0;
          }
          add.voice = pending.voice;
-         #if 0
-         v = (v+1)%3;
-         add.voice = v;
-         #endif
+
          add.cur_line = strdup(pending.cur_line);
          add.syllables = syllablize(add.cur_line);
-         #if 1
+
+         #if 0
          if (pending.voice >= 0) {
             printf("%s: ", voicename[pending.voice]);
             for (i=0; i < stb_arr_len(add.syllables); ++i)
@@ -3287,6 +3455,7 @@ static void close_vocal_line(void)
             printf("\n");
          }
          #endif
+
          stb_arr_push(all_vocals[g_songnum], add);
       }
       stb_arr_free(pending.cur_line);
@@ -3443,6 +3612,7 @@ void sing(int voice, char *fmt, ...)
       if (*s == '$') {
          int n = va_arg(v,int);
          ++s;
+         assert(n != 0);
          if (*s == '$') {
             strcpy(t, playername[n+PLAYER_OFFSET][PLAYERNAME_full ]);
             ++s;
@@ -3695,7 +3865,7 @@ static void compute_statistic_priority(color_statistic *cs)
    if (time_since_last < 2)
       cs->priority_recent = 0;
    else
-      cs->priority_recent = square(time_since_last - 1); // @TODO run this through some function, like an expoential or square or something
+      cs->priority_recent = square(time_since_last - 1);
 
    if (cs->aspect >= ASPECT_season) {
       if (prev_timestamp != 0)
@@ -4145,9 +4315,9 @@ void process_substitution(void)
                sing(last_voice, "For &, ", !tm);
             if ((subcount-j) == 1) {
                switch (random_nonrepeat(3)) {
-                  case 0: sing(V1, "$ re-plac-es $.", tm, subs[j][1], subs[j][0]); break;
-                  case 1: sing(V1, "$ re-placed by $.", tm, subs[j][0], subs[j][1]); break;
-                  case 2: sing(V1, "$ comes in for $.", tm, subs[j][1], subs[j][0]); break;
+                  case 0: sing(V1, "$ re-plac-es $.", subs[j][1], subs[j][0]); break;
+                  case 1: sing(V1, "$ re-placed by $.", subs[j][0], subs[j][1]); break;
+                  case 2: sing(V1, "$ comes in for $.", subs[j][1], subs[j][0]); break;
                }
                substitute(subs[j][0], subs[j][1], -1);
             } else {
@@ -4318,7 +4488,7 @@ void pass_to(int tm, int player, float position, int chain)
    if (game_state.possess_player == player)
       return;
    enable_color();
-   if (game_state.position == (tm ? -1.0f : 1.0f) && fabs(position) < 1.0)
+   if (game_state.position == (tm ? -1.0f : 1.0f) && fabs(position) < 1.0) {
       if (pass_back && random(100) < 70)
          switch (random_nonrepeat(2)) {
             case 0: sing(V1, "$ kicks it back out to $.", game_state.possess_player, player); break;
@@ -4332,7 +4502,7 @@ void pass_to(int tm, int player, float position, int chain)
             case 2: sing(V1, "Pass-es back out to $.", player); break;
             default: assert(0);
          }
-   else if (fabs(game_state.position) < 1.0 && fabs(position) == 1.0)
+   } else if (fabs(game_state.position) < 1.0 && fabs(position) == 1.0) {
       switch (random_nonrepeat(3)) {
          case 0: sing(V1, "$ pass-es it in to $.", game_state.possess_player, player); break;
          case 1: if (once())
@@ -4349,7 +4519,7 @@ void pass_to(int tm, int player, float position, int chain)
          else if (once()) sing(V2, "That was well placed.");
          disable_color();
       }
-   else
+   } else
       //if (chain > 2) sing(V1, "to $.", player);
       if (pass_back && random(100) < 70)
          switch (random_nonrepeat(5)) {
@@ -4458,6 +4628,8 @@ void process_foul(int first_free_throw)
 
    // run a play up to the time the foul occurs
    if (game_state.possess_action_time+1 < foul_time) {
+      if (who_was_fouled == 0)
+         who_was_fouled = team_roster[!tm][0];
       run_play(who_was_fouled, position_for_foul(), foul_time);
    }
 
@@ -4649,7 +4821,7 @@ void fouled_shot(int player, int fouled_by)
          switch (random_nonrepeat(8)) {
             case 0: sing(V1, "% pump fakes and slips by his de-fen-der_ ", player); break;
             case 1: sing(V1, "A nice dou-ble-move from $ to get by $_ ", player, defender(player)); break;
-            case 2: sing(V1, "$ gets a pick from $_ ", player, team_roster[tm][random_player(tm,player)]); break;
+            case 2: sing(V1, "$ gets a pick from $_ ", player, random_player(tm,player)); break;
             case 3: sing(V1, "Gets by his def-end-er_ ", player, defender(player)); break;
             case 4: sing(V1, "% drives to the bas-ket_ ", player); break;
             case 5: sing(V1, "Drives to the bas-ket_ ", player); break;
@@ -4700,10 +4872,10 @@ void fouled_shot(int player, int fouled_by)
 
       switch (random_nonrepeat(7)) {
          case 0: sing(V1, "looks like contact from $_ ", fouled_by); break;
-         case 1: sing(V1, "bad shot, looks like contact from $_ ", fouled_by); return;
+         case 1: sing(V1, "bad shot, looks like contact from $. ", fouled_by); return;
          case 2: sing(V1, "no good."); return; 
          case 3: sing(V1, "$ was all over him_ ", fouled_by); break;
-         case 4: sing(V1, "a bad shot, but $ was all over him_ ", fouled_by); return;
+         case 4: sing(V1, "a bad shot, but $ was all over him. ", fouled_by); return;
          case 5:
          case 6:
             // don't mention the contact
@@ -4836,8 +5008,18 @@ void shot_stats(int player, int type, int made)
       }
    }
 
-   if (SSTAT(player, SS_fg)->made == 0)
-      return; // @TODO
+   if (SSTAT(player, SS_fg)->made == 0) {
+      // ~10
+      switch (random_nonrepeat(5)) {
+         default:
+         case 0:
+         case 1:
+         case 2:
+         case 3:
+         case 4:  break;  // @TODO
+      }
+      return;
+   }
 
    if (type == SHOT_3pt ? SSTAT(player, SS_f3)->attempts > 1 : SSTAT(player, SS_fg)->attempts > 1) { 
       // ~130 times
@@ -4875,6 +5057,8 @@ void shot_stats(int player, int type, int made)
 int wide_open, contested, drive, got_by, picked;
 void color_shot_commentary(int type, int player, int assist, int made, int blocker, int flavor, int queue)
 {
+   int team;
+
    if (queue) {
       pending_comment.active = 1;
       pending_comment.type = type;
@@ -4889,34 +5073,10 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
    if (!can_do_color())
       return;
 
+   team = (player < 0) ? TEAM_1 : TEAM_0;
+
    // if !made, we do color commentary in the rebound
    if (made) {
-      if (random(100) < 70) {
-         // V3 - stats
-         switch (random_nonrepeat(5)) {
-            case 0:
-            case 1:
-               // @TODO variations!
-               // @TODO: "he" should be player name if the did_announce_score is true
-               break;
-            case 2: {
-               // @TODO
-               int stat = (type == SHOT_layup) ? SS_layup : SS_jump; 
-               break;
-            }
-            case 3: {
-               // @TODO
-               int stat = (type == SHOT_layup) ? SS_layup : SS_jump; 
-               break;
-            }
-            case 4: {
-               // @TODO
-               break;
-            }
-            default: assert(0);
-         }
-      }
-
       // other status information about shot so color doesn't conflict with pbp
       // int wide_open, contested, drive, got_by;
       if (assist) {
@@ -4963,17 +5123,17 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
                   case F_hook:
                      switch (random_neverrepeat(11)) {
                         default: break;
-                        case  0: // @TODO
-                        case  1:
-                        case  2:
-                        case  3:
-                        case  4:
-                        case  5:
-                        case  6:
-                        case  7:
-                        case  8:
+                        case  0: sing(V2, "A per-fect pass from $ to set $ up.", assist, player); break;
+                        case  1: sing(V2, "That was a great as-sist by $.", assist); break;
+                        case  2: sing(V2, "$ was wide o-pen.", player); break;
+                        case  3: sing(V2, "$ had no-bod-y around him.", player); break;
+                        case  4: sing(V2, "Nice assist from $. $ was in the right spot.", assist, player); break;
+                        case  5: sing(V2, "Good assist by $. He found $ ready to make the shot.", assist, player); break;
+                        case  6: sing(V2, "$ just does-n't seem to care wheth-er there are def-end-ers a-round him or not.", player); break;
+                        case  7: sing(V2, "Great pass by $.", assist); break;
+                        case  8: sing(V2, "You don't see plays like that ver-y of-ten."); break;
                         case  9:
-                        case 10: sing(V2, "This is a place-hol-der."); break;
+                        case 10: break; // @TODO
                      }
                      break;
                }
@@ -4981,22 +5141,22 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
             case SHOT_3pt  : 
                switch (random_neverrepeat(17)) {
                   default: break;
-                  case  0: // @TODO
-                  case  1:
-                  case  2:
-                  case  3:
-                  case  4:
-                  case  5:
-                  case  6:
-                  case  7:
-                  case  8:
-                  case  9:
-                  case 10:
-                  case 12:
+                  case  0: sing(V2, "When you can make threes like that, your team-mates bet-ter pass it to you."); break;
+                  case  1: sing(V2, "Good read by $, find-ing $ read-y to shoot the three.", assist, player); break;
+                  case  2: sing(V2, "$ was wide o-pen there. Good play by $ get-ting him the ball.", player, assist); break;
+                  case  3: sing(V2, "I'm sur-prised $ tried that three point-er, but he proved me wrong.", player); break;
+                  case  4: sing(V2, "Great pass from $ to his o-pen team-mate.", assist); break;
+                  case  5: sing(V2, "The & de-fense has got to do bet-ter than that.", !team); break;
+                  case  6: sing(V2, "I don't think an-y-body out there thought that was good de-fense."); break;
+                  case  7: sing(V2, "A ris-ky shot by $ but he's got the guts to make it work.", player); break;
+                  case  8: sing(V2, "Good pass by $.", assist); break;
+                  case  9: sing(V2, "Nice pass by $.", assist); break;
+                  case 10: sing(V2, "Good pass by $. And a res-pect-a-ble shot by $, of course.", assist, player); break;
+                  case 12: sing(V2, "He's got such a pol-ished shot from out there, you want to see $ take as man-y as he can.", player); break;
                   case 13:
                   case 14:
                   case 15:
-                  case 16: sing(V2, "This is a place-hol-der."); break;
+                  case 16: break; // @TODO
                }
                break;
          }
@@ -5016,36 +5176,39 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
                   case F_driving:
                      switch (random_neverrepeat(10)) {
                         default: break;
-                        case 0: // @TODO
-                        case 1:
-                        case 2:
-                        case 3:
-                        case 4:
-                        case 5:
+                        case 0: sing(V2, "The lane was wide o-pen for him there."); break;
+                        case 1: sing(V2, "I'm not sure how $ made that shot, but he sure did.", player); break;
+                        case 2: sing(V2, "$ just did-n't give the def-end-ers e-nough time to re-act.", player); break;
+                        case 3: sing(V2, "You've got to re-spect the way $ makes his own lane.", player); break;
+                        case 4: sing(V2, "$ found the lane and the two points were kind of an in-ev-it-a-bil-it-y.", player); break;
+                        case 5: sing(V2, "There's real-ly not much you can say about that.", player); break; // what a terrible announcer!
                         case 6:
                         case 7:
                         case 8:
-                        case 9: sing(V2, "This is a place-hol-der."); break;
+                        case 9: break; // @TODO
                      }
                      break;
                   case F_tip:
                      switch (random_neverrepeat(3)) {
                         default: break;
-                        case  0: // @TODO
-                        case  1:
-                        case  2: sing(V2, "This is a place-hol-der."); break;
+                        case  0: sing(V2, "I'm not sur-prised to see that play from $.", player); break;
+                        case  2: sing(V2, "$ just re-fused to be boxed out.", player); break;
+                        case  1: sing(V2, "That is just so-lid bas-ket-ball.");
+                                 sing(V1, "The kind you ex-pect from The Bas-ket-ball Bas-ket-ball As-so-ci-a-tion.");
+                                 sing(V2, "Ex-act-ly.");
+                                 break;
                      }
                      break;
                   case F_putback_dunk:
                      if (once()) {
-                         // @TODO
+                        sing(V2, "I don't know where the de-fen-ders were there. $ had to-tal free-dom.", player);
                      }
                      break;
                   case F_putback:
                      switch (random_neverrepeat(2)) {
                         default: break;
-                        case  0:  // @TODO
-                        case  1: sing(V2, "This is a place-hol-der."); break;
+                        case  0: sing(V2, "Somehow $ managed to an-ti-ci-pate how the ball would bounce.", player); break;
+                        case  1: sing(V2, "That's just a case of $ be-ing in the right place at the right time.", player); break;
                      }
                      break;
                }
@@ -5053,35 +5216,43 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
             case SHOT_jump :
                switch (flavor) {
                   default: assert(0);
+                  case F_fadeaway:
+                     switch (random_neverrepeat(3)) {
+                        default: break;
+                        case 0: sing(V2, "$ picked the op-tim-al time to de-ploy a fade.", player); break;
+                        case 1: sing(V2, "That's one way to sur-prise your def-end-er and make a bas-ket."); break;
+                        case 2: sing(V2, "How can you keep your hand in your op-po-nent's face when he's got a shot like that."); break;
+                     }
+                     break;
+                  case F_running_bank:
+                     switch (random_neverrepeat(2)) {
+                        default: break;
+                        case 0: sing(V2, "That was a great play by $, he left his def-end-er scram-bling to try to stop him.", player); break;
+                        case 1: sing(V2, "You don't see a lot of bank shots like that, but it's a great tool to have in your ar-sen-al."); break;
+                     }
+                     break;
                   case F_none:
                   case F_bank:
-                  case F_fadeaway:
-                  case F_running_bank:
                   case F_turnaround_hook:
                   case F_hook:
-                     switch (random_neverrepeat(21)) {
+                     switch (random_neverrepeat(16)) {
                         default: break;
-                        case  0: // @TODO
+                        case  0: sing(V2, "His def-end-er left $ with too much space there.", player); break; 
                         case  1: sing(V2, "That was-n't his best shot, but it went in an-y-way."); break;
-                        case  2:
-                        case  3:
-                        case  4:
-                        case  5:
-                        case  6:
-                        case  7:
-                        case  8:
-                        case  9:
-                        case 10:
-                        case 11:
-                        case 12:
-                        case 13:
+                        case  2: sing(V2, "That was a ris-ky shot for $ to take, but it worked out.", player); break;
+                        case  3: sing(V2, "I think you have to take that shot if you have the chance."); break;
+                        case  4: sing(V2, "I'm sure $ felt pres-sure from the shot clock, but he made it work.", player); break;
+                        case  5: sing(V2, "$ sure makes it look eas-y, does-n't he.", player); break;
+                        case  6: sing(V2, "Sol-id work from the field by $.", player); break;
+                        case  7: sing(V2, "Fun-da-men-tals, you've got to know your fun-da-men-tals, and $ sure does.", player); break;
+                        case  8: sing(V2, "You can't leave $ o-pen to take a shot like that.", player); break;
+                        case  9: sing(V2, "That's got to be a trick-y shot to make, but $ was on the mon-ey.", player); break;
+                        case 10: sing(V2, "$ looks like he's shoot-ing with ex-treme con-fi-dence now.", player); break;
+                        case 11: sing(V2, "You can't de-fend like that. You got to put more pres-sure on $.", player); break;
+                        case 12: sing(V2, "$ was un-der pres-sure there but he de-liv-ered a fine shot.", player); break;
+                        case 13: sing(V2, "The de-fen-der did ev-ery-thing right but $ had the shot dialed in.", player); break;
                         case 14:
-                        case 15:
-                        case 16:
-                        case 17:
-                        case 18:
-                        case 19:
-                        case 20: sing(V2, "This is a place-hol-der."); break;
+                        case 15: break; // @TODO
                      }
                      break;
                }
@@ -5089,9 +5260,9 @@ void color_shot_commentary(int type, int player, int assist, int made, int block
             case SHOT_3pt  : 
                switch (random_neverrepeat(3)) {
                   default: break;
-                  case  0: // @TODO
-                  case  1:
-                  case  2: sing(V2, "This is a place-hol-der."); break;
+                  case  0: sing(V2, "$ does-n't nor-mal-ly make that shot.", player); break;
+                  case  1: sing(V2, "That was an im-pres-sive shot by $.", player); break;
+                  case  2: sing(V2, "You don't see a three point shot from that far ev-er-y day.", player); break;
                }
                break;
          }
@@ -5192,6 +5363,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
             switch (flavor) {
                case F_tip:
                   handled = 1;
+                  // @TODO: there is one tip shot that's not preceded by a missed shot
                   if (made) {
                      suppress_rebound = -1;
                      switch (random_nonrepeat(2)) {
@@ -5304,7 +5476,7 @@ void took_shot(int type, int player, int assist, int made, int blocker, int flav
                   switch (random_nonrepeat(8)) {
                      case 0: sing(V1, "% pump fakes and slips by his de-fen-der_ ", player); got_by=1; break;
                      case 1: sing(V1, "A nice dou-ble-move from $ to get by $_ ", player, defender(player)); got_by=1; break;
-                     case 2: sing(V1, "$ gets a pick from $_ ", player, team_roster[tm][random_player(tm,player)]); break;
+                     case 2: sing(V1, "$ gets a pick from $_ ", player, random_player(tm,player)); break;
                      case 3: sing(V1, "Gets by his def-end-er_ ", player, defender(player)); got_by=1; break;
                      case 4: sing(V1, "% drives to the bas-ket_ ", player); drive=1; break;
                      case 5: sing(V1, "Drives to the bas-ket_ ", player); drive=1; break;
@@ -6059,14 +6231,14 @@ void free_shot(int player, int shotnum, int total_shots, int made)
                switch (random_neverrepeat(2)) { // 2
                   default: assert(0);
                   case -1: break;
-                  case  0: sing(V2, "You'd like to con-vert two every trip, but some-times it just does-n't work out.");
+                  case  0: sing(V2, "You'd like to con-vert two every trip, but some-times it just does-n't work out."); break;
                   case  1: break;  // @MORECOLOR
                }
             } else {
                switch (random_neverrepeat(3)) { // 3
                   default: assert(0);
                   case -1: break;
-                  case  0: sing(V2, "You know your team is-n't gon-na be hap-py with you miss-ing both free throws.");
+                  case  0: sing(V2, "You know your team is-n't gon-na be hap-py with you miss-ing both free throws."); break;
                   case  1: break;
                   case  2: break;  // @MORECOLOR
                }
@@ -6292,7 +6464,7 @@ void rebound(int team, int player)
       switch (shot_type) {
          case SHOT_layup:
             switch (shot_flavor) {
-               case F_tip: sing(V2, "$ had an ea-sy op-por-tun-i-ty there.", shot_player); break;
+               case F_tip: sing(V2, "$ had an eas-y op-por-tun-i-ty there.", shot_player); break;
                case F_dunk: break; // this has already been commented on
                case F_putback: sing(V2, "$ thought he had that.", shot_player); break;
                case F_none:
@@ -6462,7 +6634,7 @@ void turnover(int type, int team, int player, int stealer)
             case 0: sing(V2, "Great move by $ there.", stealer); break;
             case 1: sing(V2, "$ left him-self o-pen to that.", player); break;
             case 2: sing(V2, "$ just got right on that ball.", stealer); break;
-            case 3: sing(V2, "$ makes it look so ea-sy.", stealer); break;
+            case 3: sing(V2, "$ makes it look so eas-y.", stealer); break;
          }
    } else {
       ++hack_count2[type];
@@ -6520,10 +6692,10 @@ void turnover(int type, int team, int player, int stealer)
    if (stealer) {
       if (PSTAT(stealer, SP_steals)->game > 1)
          switch (random_nonrepeat(4)) {
-            case 0: sing(V3, "That's his #th steal of the game.", PSTAT(stealer, SP_steals)->game);
-            case 1: sing(V3, "His #th steal tonight.", PSTAT(stealer, SP_steals)->game);
-            case 2: sing(V3, "That'll be his #th steal here tonight.", PSTAT(stealer, SP_steals)->game);
-            case 3: sing(V3, "His #th steal of the game.", PSTAT(stealer, SP_steals)->game);
+            case 0: sing(V3, "That's his #th steal of the game.", PSTAT(stealer, SP_steals)->game); break;
+            case 1: sing(V3, "His #th steal tonight.", PSTAT(stealer, SP_steals)->game); break;
+            case 2: sing(V3, "That'll be his #th steal here tonight.", PSTAT(stealer, SP_steals)->game); break;
+            case 3: sing(V3, "His #th steal of the game.", PSTAT(stealer, SP_steals)->game); break;
          }
       else if (PSTAT(player_for_team[0], SP_steals)->game && PSTAT(player_for_team[1], SP_steals)->game && random(100) < 20) {
          int r1 = PSTAT(player_for_team[!team], SP_steals)->game;
@@ -6594,14 +6766,14 @@ void announce_lineup(int full_name)
          }
          if (full_name) {
             switch (style2) {
-               case 0: sprintf(buffer, "$$ at %s%c ", positions[k], ",."[k==4]); break;
+               case 0: sprintf(buffer, "$$ at %s. ", positions[k]); break;
                case 1: sprintf(buffer, "at %s, $$. ", positions[k]); break;
                case 2: sprintf(buffer, "%s, $$.", positions[k]); break;
                default: assert(0);
             }
          } else {
             switch (style2) {
-               case 0: sprintf(buffer, "$ at %s%c ", positions[k], ",."[k==4]); break;
+               case 0: sprintf(buffer, "$ at %s. ", positions[k]); break;
                case 1: sprintf(buffer, "at %s, $. ", positions[k]); break;
                case 2: sprintf(buffer, "%s, $.", positions[k]); break;
                default: assert(0);
@@ -6929,8 +7101,9 @@ int main(int argc, char **argv)
 
    remove_player_names(pbp, n);
 
-   stb_srand(time(NULL));
-   stb_srand(0);
+   stb_srand(time(NULL));             
+   if (argc > 1)
+      stb_srand(atoi(argv[1]));
    create_teams();
 
    generate_structure(3);
