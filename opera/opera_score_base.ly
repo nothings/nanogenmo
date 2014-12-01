@@ -8,6 +8,16 @@
   short-indent = 1.5\cm  % space for shortInstrumentName
 }
 
+\book {
+  \header {
+     title  = "The Basketball Game"
+     subtitle = \piecename
+     composer = "written by bba.c"
+     arranger = "arranged by bba.c"
+     poet     = "libretto by bba.c"
+     
+  }
+
 \score {
   <<
     \new StaffGroup = "StaffGroup_woodwinds" <<
@@ -114,4 +124,5 @@
         \Staff \RemoveEmptyStaves
      }
   }
+}
 }
